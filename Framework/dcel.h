@@ -47,6 +47,14 @@ namespace frm
         void safe_to_file(std::string const & path, DCEL const & dcel) noexcept;
         void load_from_file(std::string const & path, DCEL & dcel) noexcept;
 
+        void add_vertex(DCEL & dcel, Point coordinate) noexcept;
+        void add_vertex_and_split_edge(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
+        void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
+        
+        void add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
+
+        // TODO: add remove
+
         void spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept;
 
         void draw(DCEL & dcel, sf::RenderWindow & window, sf::Color const & color = sf::Color::White) noexcept;
