@@ -217,7 +217,7 @@ namespace frm
                 ImGui::Text("Face %d", static_cast<int>(dcel.edges[current].incident_face));
                 ImGui::Text("Twin %d", static_cast<int>(dcel.edges[current].twin_edge));
                 ImGui::Text("Next %d", static_cast<int>(dcel.edges[current].next_edge));
-                ImGui::Text("Previous %d", static_cast<int>(dcel.edges[current].privous_edge));
+                ImGui::Text("Previous %d", static_cast<int>(dcel.edges[current].previous_edge));
 
                 ImGui::SliderFloat("Width", &width, 0.01f, 100.f);
                 ImGui::ColorEdit3("Line", color);

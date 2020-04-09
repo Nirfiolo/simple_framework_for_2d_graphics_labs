@@ -1,35 +1,44 @@
 #include "Application.h"
 #include "dcel.h"
+#include "slab_decomposition.h"
 
 
 int main()
 {
     frm::dcel::DCEL dcel{};
 
-    dcel.vertices.push_back({ {0.f, 400.f}, 0 });
-    dcel.vertices.push_back({ {200.f, 400.f}, 7 });
-    dcel.vertices.push_back({ {200.f, 200.f}, 2 });
-    dcel.vertices.push_back({ {100.f, 100.f}, 3 });
+    frm::dcel::load_from_file("Dcel_1.dat", dcel);
 
-    dcel.faces.push_back({ 3 });
-    dcel.faces.push_back({ 1 });
+    vertical_lines lines = generate_vertical_lines(dcel);
 
-    dcel.edges.push_back({ 0, 1, 0, 7, 4 });
-    dcel.edges.push_back({ 1, 0, 1, 5, 6 });
-    dcel.edges.push_back({ 2, 3, 0, 3, 7 });
-    dcel.edges.push_back({ 3, 2, 0, 4, 2 });
-    dcel.edges.push_back({ 2, 5, 0, 0, 3 });
-    dcel.edges.push_back({ 0, 4, 1, 6, 1 });
-    dcel.edges.push_back({ 2, 7, 1, 1, 5 });
-    dcel.edges.push_back({ 1, 6, 0, 2, 0 });
+    size_t current_face = lines.first;
 
     frm::Application application{};
 
-    application.set_on_update([&dcel](float dt, sf::RenderWindow & window) noexcept
+    application.set_on_event([&dcel, &current_face, &lines](sf::Event current_event) noexcept
         {
+            if (current_event.type == sf::Event::MouseButtonPressed)
+            {
+                int x = current_event.mouseButton.x;
+                int y = current_event.mouseButton.y;
+
+                current_face = get_face_index(lines, { static_cast<float>(x), static_cast<float>(y) });
+            }
+        });
+
+    application.set_on_update([&dcel, &lines, &current_face](float dt, sf::RenderWindow & window) noexcept
+        {
+            lines = generate_vertical_lines(dcel);
+
             frm::dcel::draw(dcel, window);
 
             frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+
+            if (current_face != lines.first)
+            {
+                float color[4] = { 0.f, 0.f, 1.f, 0.5f };
+                frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
+            }
         });
 
     application.run();
