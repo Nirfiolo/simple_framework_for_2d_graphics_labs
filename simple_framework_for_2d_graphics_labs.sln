@@ -7,10 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Framework", "Framework\Fram
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRun", "TestRun\TestRun.vcxproj", "{036B189C-B27C-4383-B480-91DFB58A81FD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Slab_decomposition", "Slab_decomposition\Slab_decomposition.vcxproj", "{8DD8F803-F332-4720-A726-F8AA37E8BBA2}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Trapezoidal_decomposition", "Trapezoidal_decomposition\Trapezoidal_decomposition.vcxproj", "{EECEF23D-01DB-4971-9492-5EE5FCB4E081}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,18 +27,6 @@ Global
 		{036B189C-B27C-4383-B480-91DFB58A81FD}.Release|x64.ActiveCfg = Release|x64
 		{036B189C-B27C-4383-B480-91DFB58A81FD}.Release|x64.Build.0 = Release|x64
 		{036B189C-B27C-4383-B480-91DFB58A81FD}.Release|x86.ActiveCfg = Release|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Debug|x64.ActiveCfg = Debug|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Debug|x64.Build.0 = Debug|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Debug|x86.ActiveCfg = Debug|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Release|x64.ActiveCfg = Release|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Release|x64.Build.0 = Release|x64
-		{8DD8F803-F332-4720-A726-F8AA37E8BBA2}.Release|x86.ActiveCfg = Release|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Debug|x64.ActiveCfg = Debug|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Debug|x64.Build.0 = Debug|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Debug|x86.ActiveCfg = Debug|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Release|x64.ActiveCfg = Release|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Release|x64.Build.0 = Release|x64
-		{EECEF23D-01DB-4971-9492-5EE5FCB4E081}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
