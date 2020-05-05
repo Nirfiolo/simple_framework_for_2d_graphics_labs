@@ -33,7 +33,7 @@ namespace frm
                 size_t twin_edge;
                 size_t incident_face;
                 size_t next_edge;
-                size_t privous_edge;
+                size_t previous_edge;
             };
 
             std::vector<Vertex> vertices;
@@ -47,6 +47,12 @@ namespace frm
         void safe_to_file(std::string const & path, DCEL const & dcel) noexcept;
         void load_from_file(std::string const & path, DCEL & dcel) noexcept;
 
+        std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept;
+
+        // pair.first vertex index
+        // pair.second edge index
+        std::vector<std::pair<size_t, size_t>> get_adjacent_vertices_and_edges(DCEL const & dcel, size_t vertex_index) noexcept;
+
         void add_vertex(DCEL & dcel, Point coordinate) noexcept;
         void add_vertex_and_split_edge(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
@@ -56,6 +62,8 @@ namespace frm
         // TODO: add remove
 
         void spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept;
+
+        void draw_face_highlighted(size_t face_index, DCEL const & dcel, float color[4], sf::RenderWindow & window) noexcept;
 
         void draw(DCEL & dcel, sf::RenderWindow & window, sf::Color const & color = sf::Color::White) noexcept;
     }

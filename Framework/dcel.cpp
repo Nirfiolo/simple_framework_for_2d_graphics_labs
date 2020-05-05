@@ -35,7 +35,7 @@ namespace frm
                     dcel.edges[i].twin_edge << " , " <<
                     dcel.edges[i].incident_face << " , " << 
                     dcel.edges[i].next_edge << " , " << 
-                    dcel.edges[i].privous_edge << " ] ";
+                    dcel.edges[i].previous_edge << " ] ";
             }
             os << '\n';
 
@@ -78,7 +78,7 @@ namespace frm
                     dcel.edges[i].twin_edge >> additional_symbols >>
                     dcel.edges[i].incident_face >> additional_symbols >>
                     dcel.edges[i].next_edge >> additional_symbols >>
-                    dcel.edges[i].privous_edge >> additional_symbols;
+                    dcel.edges[i].previous_edge >> additional_symbols;
             }
 
             return is;
@@ -96,6 +96,37 @@ namespace frm
             std::ifstream file_input{ path };
 
             file_input >> dcel;
+        }
+
+        std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept
+        {
+            std::vector<std::pair<size_t, size_t>> adjacent_vertices_and_edges = get_adjacent_vertices_and_edges(dcel, vertex_index);
+
+            std::vector<size_t> adjacents(adjacent_vertices_and_edges.size());
+
+            for (size_t i = 0; i < adjacents.size(); ++i)
+            {
+                adjacents[i] = adjacent_vertices_and_edges[i].first;
+            }
+
+            return adjacents;
+        }
+
+        std::vector<std::pair<size_t, size_t>> get_adjacent_vertices_and_edges(DCEL const & dcel, size_t vertex_index) noexcept
+        {
+            std::vector<std::pair<size_t, size_t>> adjacents{};
+
+            size_t const begin_edge = dcel.vertices[vertex_index].incident_edge;
+            size_t current_edge = begin_edge;
+
+            do
+            {
+                size_t const twin = dcel.edges[current_edge].twin_edge;
+                adjacents.push_back({ dcel.edges[twin].origin_vertex, current_edge });
+                current_edge = dcel.edges[twin].next_edge;
+            } while (current_edge != begin_edge);
+
+            return adjacents;
         }
 
         void add_vertex(DCEL & dcel, Point coordinate) noexcept
@@ -135,29 +166,29 @@ namespace frm
             edge_from_new_to_next.twin_edge = twin_edge_index;
             edge_from_new_to_next.incident_face = current_edge.incident_face;
             edge_from_new_to_next.next_edge = next_after_current_edge_index;
-            edge_from_new_to_next.privous_edge = current_edge_index;
+            edge_from_new_to_next.previous_edge = current_edge_index;
 
             edge_from_new_to_current.origin_vertex = new_vertex_index;
             edge_from_new_to_current.twin_edge = current_edge_index;
             edge_from_new_to_current.incident_face = twin_edge.incident_face;
             edge_from_new_to_current.next_edge = next_after_twin_edge_index;
-            edge_from_new_to_current.privous_edge = twin_edge_index;
+            edge_from_new_to_current.previous_edge = twin_edge_index;
 
             current_edge.next_edge = edge_from_new_to_next_index;
             current_edge.twin_edge = edge_from_new_to_current_index;
 
-            next_after_current_edge.privous_edge = edge_from_new_to_next_index;
+            next_after_current_edge.previous_edge = edge_from_new_to_next_index;
 
             twin_edge.next_edge = edge_from_new_to_current_index;
             twin_edge.twin_edge = edge_from_new_to_next_index;
 
-            next_after_twin_edge.privous_edge = edge_from_new_to_current_index;
+            next_after_twin_edge.previous_edge = edge_from_new_to_current_index;
         }
 
         void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept
         {
             size_t const current_edge_index = edge_index;
-            size_t const previous_to_current_edge_index = dcel.edges[edge_index].privous_edge;
+            size_t const previous_to_current_edge_index = dcel.edges[edge_index].previous_edge;
 
             size_t const current_vertex_index = dcel.edges[current_edge_index].origin_vertex;
             size_t const new_vertex_index = dcel.vertices.size();
@@ -181,23 +212,23 @@ namespace frm
             edge_to_new.twin_edge = edge_from_new_index;
             edge_to_new.incident_face = current_edge.incident_face;
             edge_to_new.next_edge = edge_from_new_index;
-            edge_to_new.privous_edge = previous_to_current_edge_index;
+            edge_to_new.previous_edge = previous_to_current_edge_index;
             
             edge_from_new.origin_vertex = new_vertex_index;
             edge_from_new.twin_edge = edge_to_new_index;
             edge_from_new.incident_face = current_edge.incident_face;
             edge_from_new.next_edge = current_edge_index;
-            edge_from_new.privous_edge = edge_to_new_index;
+            edge_from_new.previous_edge = edge_to_new_index;
 
-            current_edge.privous_edge = edge_from_new_index;
+            current_edge.previous_edge = edge_from_new_index;
 
             previous_to_current_edge.next_edge = edge_to_new_index;
         }
 
         void add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept
         {
-            size_t const previous_to_begin_edge_index = dcel.edges[begin_edge_index].privous_edge;
-            size_t const previous_to_end_edge_index = dcel.edges[end_edge_index].privous_edge;
+            size_t const previous_to_begin_edge_index = dcel.edges[begin_edge_index].previous_edge;
+            size_t const previous_to_end_edge_index = dcel.edges[end_edge_index].previous_edge;
 
             size_t const begin_vertex_index = dcel.edges[begin_edge_index].origin_vertex;
             size_t const end_vertex_index = dcel.edges[end_edge_index].origin_vertex;
@@ -229,19 +260,19 @@ namespace frm
             edge_from_begin_to_end.twin_edge = edge_from_end_to_begin_index;
             edge_from_begin_to_end.incident_face = new_face_index;
             edge_from_begin_to_end.next_edge = end_edge_index;
-            edge_from_begin_to_end.privous_edge = previous_to_begin_edge_index;
+            edge_from_begin_to_end.previous_edge = previous_to_begin_edge_index;
 
             edge_from_end_to_begin.origin_vertex = end_vertex_index;
             edge_from_end_to_begin.twin_edge = edge_from_begin_to_end_index;
             edge_from_end_to_begin.incident_face = current_face_index;
             edge_from_end_to_begin.next_edge = begin_edge_index;
-            edge_from_end_to_begin.privous_edge = previous_to_end_edge_index;
+            edge_from_end_to_begin.previous_edge = previous_to_end_edge_index;
 
-            begin_edge.privous_edge = edge_from_end_to_begin_index;
+            begin_edge.previous_edge = edge_from_end_to_begin_index;
 
             previous_to_begin_edge.next_edge = edge_from_begin_to_end_index;
 
-            end_edge.privous_edge = edge_from_begin_to_end_index;
+            end_edge.previous_edge = edge_from_begin_to_end_index;
 
             previous_to_end_edge.next_edge = edge_from_end_to_begin_index;
 
