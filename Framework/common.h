@@ -39,4 +39,29 @@ namespace frm
     {
         return point.y > line.x * point.x + line.y;
     }
+
+    template<typename T>
+    static constexpr T lerp(T begin, T end, float alpha)
+    {
+        float const begin_float = static_cast<float>(begin);
+        float const end_float = static_cast<float>(end);
+
+        return static_cast<T>(begin_float * (1.f - alpha) + end_float * alpha);
+    }
+
+    template<>
+    static constexpr float lerp<float>(float begin, float end, float alpha)
+    {
+        return begin * (1.f - alpha) + end * alpha;
+    }
+
+    template<>
+    static constexpr Point lerp<Point>(Point begin, Point end, float alpha)
+    {
+        return
+        {
+            lerp(begin.x, end.x, alpha),
+            lerp(begin.y, end.y, alpha)
+        };
+    }
 }
