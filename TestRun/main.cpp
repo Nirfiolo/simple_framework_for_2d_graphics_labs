@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "dcel.h"
+#include "triangulation.h"
 
 
 int main()
@@ -15,6 +15,8 @@ int main()
             frm::dcel::draw(dcel, window);
 
             frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+
+            frm::spawn_triangulation_button(dcel);
         });
 
     application.run();
