@@ -195,6 +195,7 @@ namespace frm
 
             size_t const index = free_indices.back();
             free_indices.pop_back();
+            data[index] = {};
             return index;
         }
 
