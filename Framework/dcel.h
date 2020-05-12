@@ -20,11 +20,13 @@ namespace frm
             {
                 Point coordinate;
                 size_t incident_edge;
+                bool is_exist{ true };
             };
 
             struct Face
             {
                 size_t edge;
+                bool is_exist{ true };
             };
 
             struct Edge
@@ -34,11 +36,15 @@ namespace frm
                 size_t incident_face;
                 size_t next_edge;
                 size_t previous_edge;
+                bool is_exist{ true };
             };
 
             std::vector<Vertex> vertices;
+            std::vector<size_t> free_vertices{};
             std::vector<Face> faces;
+            std::vector<size_t> free_faces{};
             std::vector<Edge> edges;
+            std::vector<size_t> free_edges{};
         };
 
         std::ostream & operator<<(std::ostream & os, DCEL const & dcel) noexcept;
@@ -58,6 +64,8 @@ namespace frm
         void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         
         void add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
+
+        void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept;
 
         // TODO: add remove
 

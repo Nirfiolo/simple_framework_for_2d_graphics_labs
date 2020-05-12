@@ -125,7 +125,7 @@ namespace frm
 
             ImGui::NextColumn();
 
-            if (current < dcel.vertices.size())
+            if (current < dcel.vertices.size() && dcel.vertices[current].is_exist)
             {
                 static float circle_color[4] = { 1.f, 0.0f, 0.f, 0.7f };
                 static float radius = 10.f;
@@ -139,6 +139,10 @@ namespace frm
 
                 ImGui::SliderFloat("Radius", &radius, 0.01f, 100.f);
                 ImGui::ColorEdit3("Circle", circle_color);
+            }
+            else if (current < dcel.vertices.size())
+            {
+                ImGui::Text("Current vertex doesn't exist");
             }
 
             ImGui::NextColumn();
@@ -162,6 +166,18 @@ namespace frm
                     add_vertex(dcel, new_vertex);
                 }
             }
+
+            static bool need_remove_vertex = true;
+            ImGui::Checkbox("Remove Vertex", &need_remove_vertex);
+            if (need_remove_vertex)
+            {
+                if (current < dcel.vertices.size() &&
+                    dcel.vertices[current].is_exist &&
+                    ImGui::Button("Remove current vertex with single edge"))
+                {
+                    remove_vertex_with_single_edge(dcel, current);
+                }
+            }
         }
 
         void show_faces(DCEL & dcel, sf::RenderWindow & window) noexcept
@@ -174,7 +190,7 @@ namespace frm
 
             ImGui::NextColumn();
 
-            if (current < dcel.faces.size())
+            if (current < dcel.faces.size() && dcel.faces[current].is_exist)
             {
                 static float color[4] = { 1.f, 0.0f, 0.f, 0.7f };
 
@@ -183,6 +199,10 @@ namespace frm
                 ImGui::Text("Edge %d", static_cast<int>(dcel.faces[current].edge));
 
                 ImGui::ColorEdit3("Face color", color);
+            }
+            else if (current < dcel.faces.size())
+            {
+                ImGui::Text("Current face doesn't exist");
             }
         }
 
@@ -196,7 +216,7 @@ namespace frm
 
             ImGui::NextColumn();
 
-            if (current < dcel.edges.size())
+            if (current < dcel.edges.size() && dcel.edges[current].is_exist)
             {
                 static float color[4] = { 1.f, 0.0f, 0.f, 0.7f };
                 static float width = 10.f;
@@ -222,10 +242,14 @@ namespace frm
                 ImGui::SliderFloat("Width", &width, 0.01f, 100.f);
                 ImGui::ColorEdit3("Line", color);
             }
+            else if (current < dcel.edges.size())
+            {
+                ImGui::Text("Current edge doesn't exist");
+            }
 
             ImGui::NextColumn();
 
-            if (current < dcel.edges.size())
+            if (current < dcel.edges.size() && dcel.edges[current].is_exist)
             {
                 static bool need_add_vertex = true;
                 ImGui::Checkbox("Add Vertex", &need_add_vertex);
@@ -355,17 +379,32 @@ namespace frm
 
         void draw(DCEL & dcel, sf::RenderWindow & window, sf::Color const & color) noexcept
         {
-            sf::VertexArray vertices{ sf::Lines, 2 * dcel.edges.size() };
+            size_t edge_count = 0;
 
             for (size_t i = 0; i < dcel.edges.size(); ++i)
             {
-                size_t const begin_origin = dcel.edges[i].origin_vertex;
-                vertices[2 * i].position = { dcel.vertices[begin_origin].coordinate.x, dcel.vertices[begin_origin].coordinate.y };
-                vertices[2 * i].color = color;
+                if (dcel.edges[i].is_exist)
+                {
+                    ++edge_count;
+                }
+            }
 
-                size_t const end_origin = dcel.edges[dcel.edges[i].twin_edge].origin_vertex;
-                vertices[2 * i + 1].position = { dcel.vertices[end_origin].coordinate.x, dcel.vertices[end_origin].coordinate.y };
-                vertices[2 * i + 1].color = color;
+            sf::VertexArray vertices{ sf::Lines, 2 * edge_count };
+            size_t index = 0;
+
+            for (size_t i = 0; i < dcel.edges.size(); ++i)
+            {
+                if (dcel.edges[i].is_exist)
+                {
+                    size_t const begin_origin = dcel.edges[i].origin_vertex;
+                    vertices[2 * index].position = { dcel.vertices[begin_origin].coordinate.x, dcel.vertices[begin_origin].coordinate.y };
+                    vertices[2 * index].color = color;
+
+                    size_t const end_origin = dcel.edges[dcel.edges[i].twin_edge].origin_vertex;
+                    vertices[2 * index + 1].position = { dcel.vertices[end_origin].coordinate.x, dcel.vertices[end_origin].coordinate.y };
+                    vertices[2 * index + 1].color = color;
+                    ++index;
+                }
             }
 
             window.draw(vertices);
