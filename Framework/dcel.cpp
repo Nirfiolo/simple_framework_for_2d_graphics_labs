@@ -152,6 +152,71 @@ namespace frm
             file_input >> dcel;
         }
 
+        size_t get_outside_face_index(frm::dcel::DCEL const & dcel) noexcept(!IS_DEBUG)
+        {
+            size_t left_vertex_index = 0;
+            frm::Point left_vertex_point = dcel.vertices[0].coordinate;
+
+            for (size_t i = 0; i < dcel.vertices.size(); ++i)
+            {
+                frm::Point current_point = dcel.vertices[i].coordinate;
+
+                if (abs(current_point.x - left_vertex_point.x) < frm::epsilon)
+                {
+                    if (current_point.y - left_vertex_point.y < frm::epsilon)
+                    {
+                        left_vertex_point = current_point;
+                        left_vertex_index = i;
+                    }
+                }
+                else if (current_point.x - left_vertex_point.x < frm::epsilon)
+                {
+                    left_vertex_point = current_point;
+                    left_vertex_index = i;
+                }
+            }
+
+            auto const get_vector_from_edge = [&dcel](size_t edge_index) noexcept -> frm::Point
+            {
+                size_t const current_edge_index = edge_index;
+                size_t const next_after_current_edge_index = dcel.edges[current_edge_index].next_edge;
+
+                size_t const current_vertex_index = dcel.edges[current_edge_index].origin_vertex;
+                size_t const next_after_current_vertex_index = dcel.edges[next_after_current_edge_index].origin_vertex;
+
+                frm::Point const current = dcel.vertices[current_vertex_index].coordinate;
+                frm::Point const next = dcel.vertices[next_after_current_vertex_index].coordinate;
+
+                return { next.x - current.x, next.y - current.y };
+            };
+
+            size_t outside_face_index = std::numeric_limits<size_t>::max();
+
+            size_t const current_vertex_index = left_vertex_index;
+
+            std::vector<std::pair<size_t, size_t>> adjacents = frm::dcel::get_adjacent_vertices_and_edges(dcel, current_vertex_index);
+
+            for (size_t i = 0; i < adjacents.size(); ++i)
+            {
+                size_t const current_edge_index = adjacents[i].second;
+                frm::Point const current = get_vector_from_edge(current_edge_index);
+                frm::Point const previuos = get_vector_from_edge(dcel.edges[current_edge_index].previous_edge);
+
+                float const angle = frm::angle_between_vectors(current, previuos);
+
+                if (angle > frm::epsilon)
+                {
+                    outside_face_index = dcel.edges[current_edge_index].incident_face;
+                }
+
+                size_t f = 0;
+            }
+
+            assert(outside_face_index != std::numeric_limits<size_t>::max());
+
+            return outside_face_index;
+        }
+
         std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept
         {
             std::vector<std::pair<size_t, size_t>> adjacent_vertices_and_edges = get_adjacent_vertices_and_edges(dcel, vertex_index);
@@ -308,7 +373,7 @@ namespace frm
             previous_to_current_edge.next_edge = edge_to_new_index;
         }
 
-        void add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept
+        std::pair<size_t, size_t> add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept
         {
             size_t const previous_to_begin_edge_index = dcel.edges[begin_edge_index].previous_edge;
             size_t const previous_to_end_edge_index = dcel.edges[end_edge_index].previous_edge;
@@ -363,6 +428,8 @@ namespace frm
                 dcel.edges[current_index].incident_face = new_face_index;
                 current_index = dcel.edges[current_index].next_edge;
             } while (current_index != begin);
+
+            return { edge_from_begin_to_end_index, edge_from_end_to_begin_index };
         }
 
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept

@@ -31,11 +31,17 @@ int main()
         {
             frm::dcel::draw(dcel, window);
 
-            frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+            bool is_dirty = false;
 
-            frm::spawn_triangulation_button(dcel);
+            is_dirty |= frm::spawn_triangulation_button(dcel);
 
-            trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
+            is_dirty |= frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+
+            if (is_dirty)
+            {
+                trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
+                current_face = trapezoid_data_and_graph_root.first;
+            }
 
             if (current_face != trapezoid_data_and_graph_root.first)
             {

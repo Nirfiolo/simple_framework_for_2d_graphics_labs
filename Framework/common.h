@@ -40,6 +40,15 @@ namespace frm
         return point.y > line.x * point.x + line.y;
     }
 
+    // -1 - first > second
+    //  0 - equal
+    //  1 - first < second
+    int compare_point_by_x(Point first, Point second) noexcept(!IS_DEBUG);
+    // -1 - first > second
+    //  0 - equal
+    //  1 - first < second
+    int compare_point_by_y(Point first, Point second) noexcept(!IS_DEBUG);
+
     template<typename T>
     static constexpr T lerp(T begin, T end, float alpha)
     {

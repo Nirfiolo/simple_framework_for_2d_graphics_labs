@@ -53,6 +53,8 @@ namespace frm
         void safe_to_file(std::string const & path, DCEL const & dcel) noexcept;
         void load_from_file(std::string const & path, DCEL & dcel) noexcept;
 
+        size_t get_outside_face_index(frm::dcel::DCEL const & dcel) noexcept(!IS_DEBUG);
+
         std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept;
 
         // pair.first vertex index
@@ -63,13 +65,13 @@ namespace frm
         void add_vertex_and_split_edge(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         
-        void add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
+        std::pair<size_t, size_t> add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
 
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept;
 
         // TODO: add remove
 
-        void spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept;
+        bool spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept;
 
         void draw_face_highlighted(size_t face_index, DCEL const & dcel, float color[4], sf::RenderWindow & window) noexcept;
 

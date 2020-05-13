@@ -47,4 +47,64 @@ namespace frm
 
         return { m, begin.y - m * begin.x };
     }
+
+    int compare_point_by_x(Point first, Point second) noexcept(!IS_DEBUG)
+    {
+        if (abs(first.x - second.x) < frm::epsilon)
+        {
+            if (abs(first.y - second.y) < frm::epsilon)
+            {
+                return 0;
+            }
+            if (first.y - second.y < frm::epsilon)
+            {
+                return 1;
+            }
+            if (first.y - second.y > frm::epsilon)
+            {
+                return -1;
+            }
+        }
+        if (first.x - second.x < frm::epsilon)
+        {
+            return 1;
+        }
+        if (first.x - second.x > frm::epsilon)
+        {
+            return -1;
+        }
+
+        assert(false && "Compare error");
+        return 0;
+    }
+    
+    int compare_point_by_y(Point first, Point second) noexcept(!IS_DEBUG)
+    {
+        if (abs(first.y - second.y) < frm::epsilon)
+        {
+            if (abs(first.x - second.x) < frm::epsilon)
+            {
+                return 0;
+            }
+            if (first.x - second.x < frm::epsilon)
+            {
+                return 1;
+            }
+            if (first.x - second.x > frm::epsilon)
+            {
+                return -1;
+            }
+        }
+        if (first.y - second.y < frm::epsilon)
+        {
+            return 1;
+        }
+        if (first.y - second.y > frm::epsilon)
+        {
+            return -1;
+        }
+
+        assert(false && "Compare error");
+        return 0;
+    }
 }
