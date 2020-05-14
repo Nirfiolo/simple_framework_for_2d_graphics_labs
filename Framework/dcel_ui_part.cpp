@@ -137,7 +137,7 @@ namespace frm
 
                 is_dirty |= ImGui::SliderFloat("X", &point.x, 0.f, 1000.f);
                 is_dirty |= ImGui::SliderFloat("Y", &point.y, 0.f, 1000.f);
-                ImGui::Text("Edge &d", static_cast<int>(dcel.vertices[current].incident_edge));
+                ImGui::Text("Edge %d", static_cast<int>(dcel.vertices[current].incident_edge));
 
                 ImGui::SliderFloat("Radius", &radius, 0.01f, 100.f);
                 ImGui::ColorEdit3("Circle", circle_color);

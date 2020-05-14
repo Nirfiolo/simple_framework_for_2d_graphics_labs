@@ -236,6 +236,8 @@ namespace frm
             std::vector<std::pair<size_t, size_t>> adjacents{};
 
             size_t const begin_edge = dcel.vertices[vertex_index].incident_edge;
+            assert(dcel.edges[begin_edge].origin_vertex == vertex_index);
+
             size_t current_edge = begin_edge;
 
             do

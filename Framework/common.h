@@ -16,6 +16,8 @@ namespace frm
         float y;
     };
 
+    Point operator-(Point a, Point b) noexcept;
+
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept;
     std::istream & operator>>(std::istream & is, Point & point) noexcept;
 

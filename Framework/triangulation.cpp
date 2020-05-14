@@ -2,6 +2,8 @@
 
 #include "imgui/imgui.h"
 
+#include <set>
+
 
 namespace frm
 {
@@ -113,22 +115,59 @@ namespace frm
             if (last_edge_is_left != edges[i].second)
             {
                 size_t last_left_edge = std::numeric_limits<size_t>::max();
-                size_t current_edge_index = std::numeric_limits<size_t>::max();
+                size_t last_edge_index = std::numeric_limits<size_t>::max();
+
+                size_t current_right_edge = edges[i].first;
 
                 while (stack.size() > 1)
                 {
-                    current_edge_index = stack.back();
+                    size_t const current_edge_index = stack.back();
                     stack.pop_back();
-                    std::pair<size_t, size_t> new_edges_index = dcel::add_edge_between_two_edges(dcel, edges[i].first, edges[current_edge_index].first);
+                    std::pair<size_t, size_t> new_edges_index = dcel::add_edge_between_two_edges(dcel, current_right_edge, edges[current_edge_index].first);
+                    if (last_left_edge == std::numeric_limits<size_t>::max())
+                    {
+                        last_edge_index = current_edge_index;
+
+                        if (edges[i].second)
+                        {
+                            if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
+                            {
+                                last_left_edge = new_edges_index.first;
+                            }
+                            else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
+                            {
+                                last_left_edge = new_edges_index.second;
+                            }
+                            else
+                            {
+                                assert(false && "Error edge adding");
+                            }
+                        }
+                        else
+                        {
+                            if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[edges[current_edge_index].first].origin_vertex)
+                            {
+                                last_left_edge = new_edges_index.first;
+                            }
+                            else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[edges[current_edge_index].first].origin_vertex)
+                            {
+                                last_left_edge = new_edges_index.second;
+                            }
+                            else
+                            {
+                                assert(false && "Error edge adding");
+                            }
+                        }
+                    }
                     if (edges[i].second)
                     {
-                        if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[edges[i].first].origin_vertex)
+                        if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
                         {
-                            last_left_edge = new_edges_index.first;
+                            current_right_edge = new_edges_index.second;
                         }
-                        else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[edges[i].first].origin_vertex)
+                        else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
                         {
-                            last_left_edge = new_edges_index.second;
+                            current_right_edge = new_edges_index.first;
                         }
                         else
                         {
@@ -139,11 +178,11 @@ namespace frm
                     {
                         if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[edges[current_edge_index].first].origin_vertex)
                         {
-                            last_left_edge = new_edges_index.first;
+                            current_right_edge = new_edges_index.second;
                         }
                         else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[edges[current_edge_index].first].origin_vertex)
                         {
-                            last_left_edge = new_edges_index.second;
+                            current_right_edge = new_edges_index.first;
                         }
                         else
                         {
@@ -156,7 +195,7 @@ namespace frm
                 stack.push_back(i - 1);
                 stack.push_back(i);
 
-                if (current_edge_index != std::numeric_limits<size_t>::max())
+                if (last_left_edge != std::numeric_limits<size_t>::max())
                 {
                     if (edges[i].second)
                     {
@@ -164,7 +203,7 @@ namespace frm
                     }
                     else
                     {
-                        edges[current_edge_index].first = last_left_edge;
+                        edges[last_edge_index].first = last_left_edge;
                     }
                 }
             }
@@ -213,8 +252,6 @@ namespace frm
 
                 stack.push_back(current_edge_index);
                 stack.push_back(i);
-
-                size_t end_line = 0;
             }
         }
 
@@ -224,17 +261,624 @@ namespace frm
             stack.pop_back();
             dcel::add_edge_between_two_edges(dcel, edges.back().first, edges[current_edge_index].first);
         }
-
-        size_t end_line = 0;
     }
 
 
-    void triangulation(dcel::DCEL & dcel) noexcept
+    std::set<size_t> get_outside_faces(dcel::DCEL const & dcel) noexcept
     {
         size_t const outside_face_index = get_outside_face_index(dcel);
 
+        size_t const main_face_index = dcel.edges[dcel.edges[dcel.faces[outside_face_index].edge].twin_edge].incident_face;
 
-        triangulation_y_monotone(dcel, (outside_face_index + 1) % 2);
+        std::set<size_t> outside_faces{};
+        for (size_t i = 0; i < dcel.faces.size(); ++i)
+        {
+            if (i != main_face_index)
+            {
+                outside_faces.insert(i);
+            }
+        }
+
+        return outside_faces;
+    }
+
+    bool is_outside_face(dcel::DCEL const & dcel, std::set<size_t> const & outside_faces, size_t face_index) noexcept
+    {
+        if (outside_faces.find(face_index) != outside_faces.end())
+        {
+            return true;
+        }
+        return false;
+    }
+
+    // first - current
+    // second.first - previous
+    // second.second - next
+    std::pair<size_t, std::pair<size_t, size_t>> get_current_and_previous_and_next_edges_to_current_vertex(
+        dcel::DCEL const & dcel,
+        size_t current_vertex_index,
+        std::set<size_t> const & outside_faces
+    ) noexcept
+    {
+        std::vector<std::pair<size_t, size_t>> adjacents = frm::dcel::get_adjacent_vertices_and_edges(dcel, current_vertex_index);
+
+        if (adjacents.size() == 2)
+        {
+            size_t const adjacent_index = is_outside_face(dcel, outside_faces, dcel.edges[adjacents[0].second].incident_face) ? 1 : 0;
+
+            size_t const current_edge_index = adjacents[adjacent_index].second;
+            size_t const previous_edge_to_current_index = dcel.edges[current_edge_index].previous_edge;
+            size_t const next_edge_after_current_index = dcel.edges[current_edge_index].next_edge;
+
+            return { current_edge_index, { previous_edge_to_current_index, next_edge_after_current_index } };
+        }
+        assert(false && "Incorrect polygon");
+
+        return {};
+    }
+
+    // first - current
+    // second.first - previous
+    // second.second - next
+    std::pair<size_t, std::pair<size_t, size_t>> get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+        dcel::DCEL const & dcel,
+        size_t current_vertex_index,
+        std::set<size_t> const & outside_faces,
+        size_t previous_neighbour,
+        size_t next_neighbour
+    ) noexcept
+    {
+        std::vector<std::pair<size_t, size_t>> adjacents = frm::dcel::get_adjacent_vertices_and_edges(dcel, current_vertex_index);
+
+        if (adjacents.size() == 2)
+        {
+            return get_current_and_previous_and_next_edges_to_current_vertex(dcel, current_vertex_index, outside_faces);
+        }
+
+        size_t first_neighbour_index_in_adjacents = std::numeric_limits<size_t>::max();
+        for (size_t i = 0; i < adjacents.size(); ++i)
+        {
+            if (adjacents[i].first == previous_neighbour)
+            {
+                first_neighbour_index_in_adjacents = i;
+                break;
+            }
+        }
+
+        assert(first_neighbour_index_in_adjacents != std::numeric_limits<size_t>::max() && "first neighbour not found");
+
+        size_t current_edge_index;
+
+        if (dcel.edges[dcel.edges[adjacents[first_neighbour_index_in_adjacents].second].previous_edge].origin_vertex == next_neighbour)
+        {
+            current_edge_index = adjacents[first_neighbour_index_in_adjacents].second;
+        }
+        else
+        {
+            current_edge_index = dcel.edges[dcel.edges[adjacents[first_neighbour_index_in_adjacents].second].twin_edge].next_edge;
+        }
+
+        size_t const previous_edge_to_current_index = dcel.edges[current_edge_index].previous_edge;
+        size_t const next_edge_after_current_index = dcel.edges[current_edge_index].next_edge;
+
+        return { current_edge_index, { previous_edge_to_current_index, next_edge_after_current_index } };
+    }
+
+    float get_intersection_line_with_horizontal_line(Point begin, Point end, float y) noexcept
+    {
+        return begin.x + (y - begin.y) * (begin.x - end.x) / (begin.y - end.y);
+    }
+
+    enum class VertexType : uint8_t
+    {
+        Start,
+        Split,
+        End,
+        Merge,
+        RegularLeft,
+        RegularRight,
+        Undefined
+    };
+
+    struct StatusComponent
+    {
+        size_t begin_vertex_index;
+        size_t end_vertex_index;
+        size_t helper;
+        size_t previous_neighbour_to_helper;
+        size_t next_neighbour_after_helper;
+    };
+
+    auto const status_component_comparator = [](StatusComponent const & a, StatusComponent const & b) noexcept -> bool
+    {
+        if (a.begin_vertex_index == b.begin_vertex_index)
+        {
+            return a.end_vertex_index < b.end_vertex_index;
+        }
+
+        return a.begin_vertex_index < b.begin_vertex_index;
+    };
+
+    std::set<StatusComponent, decltype(status_component_comparator)>::iterator get_nearest_left_component(
+        dcel::DCEL const & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        size_t current_vertex_index
+    ) noexcept
+    {
+        auto nearest_left_component = status.begin();
+
+        Point const current_point = dcel.vertices[current_vertex_index].coordinate;
+        float nearest_x = -1000000000.f;
+
+        auto current_iterator = status.begin();
+        for (; current_iterator != status.end(); ++current_iterator)
+        {
+            StatusComponent const & status_component = *current_iterator;
+            Point const begin = dcel.vertices[status_component.begin_vertex_index].coordinate;
+            Point const end = dcel.vertices[status_component.end_vertex_index].coordinate;
+
+            if (abs(begin.y - end.y) < epsilon)
+            {
+                if (begin.x < current_point.x && begin.x > nearest_x)
+                {
+                    nearest_x = begin.x;
+                    nearest_left_component = current_iterator;
+                }
+                if (end.x < current_point.x && end.x > nearest_x)
+                {
+                    nearest_x = end.x;
+                    nearest_left_component = current_iterator;
+                }
+            }
+            else
+            {
+                float const x_position = get_intersection_line_with_horizontal_line(begin, end, current_point.y);
+
+                if (x_position < current_point.x && x_position > nearest_x)
+                {
+                    nearest_x = x_position;
+                    nearest_left_component = current_iterator;
+                }
+            }
+        }
+        return nearest_left_component;
+    }
+
+    void handle_start(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::set<size_t> const & outside_faces,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        size_t vertex_index
+    ) noexcept
+    {
+        std::pair<size_t, size_t> const previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces).second;
+        size_t const previous_edge_to_current_index = previous_and_next_edges_to_current.first;
+        size_t const next_edge_after_current_index = previous_and_next_edges_to_current.second;
+
+        StatusComponent status_component{};
+        status_component.begin_vertex_index = vertex_index;
+        status_component.end_vertex_index = dcel.edges[previous_edge_to_current_index].origin_vertex;
+        status_component.helper = vertex_index;
+        status_component.previous_neighbour_to_helper = vertex_neighbours[vertex_index].first;
+        status_component.next_neighbour_after_helper = vertex_neighbours[vertex_index].second;
+
+        status.insert(status_component);
+    }
+
+    void handle_end(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::vector<VertexType> const & vertex_types,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        std::set<size_t> const & outside_faces,
+        size_t vertex_index
+    ) noexcept
+    {
+        std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+        size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
+        size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
+        size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
+
+        StatusComponent status_component{};
+        status_component.begin_vertex_index = dcel.edges[next_edge_after_current_index].origin_vertex;
+        status_component.end_vertex_index = vertex_index;
+
+        auto iterator_to_status_component = status.find(status_component);
+
+        if (iterator_to_status_component == status.end())
+        {
+            assert(false && "Status error: existing component not found");
+        }
+        else
+        {
+            size_t const helper = (*iterator_to_status_component).helper;
+            size_t const previous_neighbour_to_helper = (*iterator_to_status_component).previous_neighbour_to_helper;
+            size_t const next_neighbour_after_helper = (*iterator_to_status_component).next_neighbour_after_helper;
+
+            if (vertex_types[helper] == VertexType::Merge)
+            {
+                std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_helper =
+                    get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                        dcel,
+                        helper,
+                        outside_faces,
+                        previous_neighbour_to_helper,
+                        next_neighbour_after_helper
+                    );
+                size_t const helper_edge_index = current_and_previous_and_next_edges_to_current.first;
+
+                dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+            }
+        }
+
+        status.erase(iterator_to_status_component);
+    }
+
+    void handle_split(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::vector<VertexType> const & vertex_types,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        std::set<size_t> const & outside_faces,
+        size_t vertex_index
+    ) noexcept
+    {
+        auto nearest_left_component = get_nearest_left_component(dcel, status, vertex_index);
+
+        StatusComponent nearest_left = *nearest_left_component;
+
+        std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+        size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
+        size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
+        size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
+
+        size_t const helper = nearest_left.helper;
+        size_t const previous_neighbour_to_helper = nearest_left.previous_neighbour_to_helper;
+        size_t const next_neighbour_after_helper = nearest_left.next_neighbour_after_helper;
+        size_t const helper_edge_index =
+            get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                dcel,
+                helper,
+                outside_faces,
+                previous_neighbour_to_helper,
+                next_neighbour_after_helper
+            ).first;
+
+        dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+
+        status.erase(nearest_left_component);
+        nearest_left.helper = vertex_index;
+        nearest_left.previous_neighbour_to_helper = helper;
+        nearest_left.next_neighbour_after_helper = dcel.edges[next_edge_after_current_index].origin_vertex;
+
+        status.insert(nearest_left);
+
+        StatusComponent status_component{};
+        status_component.begin_vertex_index = vertex_index;
+        status_component.end_vertex_index = dcel.edges[previous_edge_to_current_index].origin_vertex;
+        status_component.helper = vertex_index;
+        status_component.previous_neighbour_to_helper = dcel.edges[previous_edge_to_current_index].origin_vertex;
+        status_component.next_neighbour_after_helper = helper;
+
+        status.insert(status_component);
+    }
+
+    void handle_merge(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::vector<VertexType> const & vertex_types,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        std::set<size_t> const & outside_faces,
+        size_t vertex_index
+    ) noexcept
+    {
+        std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+        size_t current_edge_index = current_and_previous_and_next_edges_to_current.first;
+        size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
+        size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
+
+        StatusComponent status_component{};
+        status_component.begin_vertex_index = dcel.edges[next_edge_after_current_index].origin_vertex;
+        status_component.end_vertex_index = vertex_index;
+
+        auto iterator_to_status_component = status.find(status_component);
+
+        size_t future_previous_neighbour = vertex_neighbours[vertex_index].first;
+        size_t future_next_neighbour = vertex_neighbours[vertex_index].second;
+
+        if (iterator_to_status_component == status.end())
+        {
+            assert(false && "Status error: existing component not found");
+        }
+        else
+        {
+            size_t const helper = (*iterator_to_status_component).helper;
+            size_t const previous_neighbour_to_helper = (*iterator_to_status_component).previous_neighbour_to_helper;
+            size_t const next_neighbour_after_helper = (*iterator_to_status_component).next_neighbour_after_helper;
+
+            if (vertex_types[helper] == VertexType::Merge)
+            {
+                size_t const helper_edge_index =
+                    get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                        dcel,
+                        helper,
+                        outside_faces,
+                        previous_neighbour_to_helper,
+                        next_neighbour_after_helper
+                    ).first;
+
+                dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+
+                future_next_neighbour = helper;
+            }
+        }
+
+        status.erase(iterator_to_status_component);
+
+        auto nearest_left_component = get_nearest_left_component(dcel, status, vertex_index);
+
+        StatusComponent nearest_left = *nearest_left_component;
+
+        if (vertex_types[nearest_left.helper] == VertexType::Merge)
+        {
+            current_edge_index = get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                dcel,
+                vertex_index,
+                outside_faces,
+                future_previous_neighbour,
+                future_next_neighbour
+            ).first;
+
+            size_t const helper = nearest_left.helper;
+            size_t const previous_neighbour_to_helper = nearest_left.previous_neighbour_to_helper;
+            size_t const next_neighbour_after_helper = nearest_left.next_neighbour_after_helper;
+
+            size_t const helper_edge_index =
+                get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                    dcel,
+                    helper,
+                    outside_faces,
+                    previous_neighbour_to_helper,
+                    next_neighbour_after_helper
+                ).first;
+
+            dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+
+            future_previous_neighbour = helper;
+        }
+
+        status.erase(nearest_left_component);
+        nearest_left.helper = vertex_index;
+        nearest_left.previous_neighbour_to_helper = future_previous_neighbour;
+        nearest_left.next_neighbour_after_helper = future_next_neighbour;
+
+        status.insert(nearest_left);
+    }
+
+    void handle_regular_left(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::vector<VertexType> const & vertex_types,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        std::set<size_t> const & outside_faces,
+        size_t vertex_index
+    ) noexcept
+    {
+        std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+        size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
+        size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
+        size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
+
+        StatusComponent status_component{};
+        status_component.begin_vertex_index = dcel.edges[next_edge_after_current_index].origin_vertex;
+        status_component.end_vertex_index = vertex_index;
+
+        auto iterator_to_status_component = status.find(status_component);
+
+        if (iterator_to_status_component == status.end())
+        {
+            assert(false && "Status error: existing component not found");
+        }
+        else
+        {
+            size_t const helper = (*iterator_to_status_component).helper;
+            size_t const previous_neighbour_to_helper = (*iterator_to_status_component).previous_neighbour_to_helper;
+            size_t const next_neighbour_after_helper = (*iterator_to_status_component).next_neighbour_after_helper;
+
+            if (vertex_types[helper] == VertexType::Merge)
+            {
+                size_t const helper_edge_index =
+                    get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                        dcel,
+                        helper,
+                        outside_faces,
+                        previous_neighbour_to_helper,
+                        next_neighbour_after_helper
+                    ).first;
+
+                dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+            }
+        }
+
+        status.erase(iterator_to_status_component);
+
+        StatusComponent new_status_component{};
+        new_status_component.begin_vertex_index = vertex_index;
+        new_status_component.end_vertex_index = dcel.edges[previous_edge_to_current_index].origin_vertex;
+        new_status_component.helper = vertex_index;
+        new_status_component.previous_neighbour_to_helper = vertex_neighbours[vertex_index].first;
+        new_status_component.next_neighbour_after_helper = vertex_neighbours[vertex_index].second;
+
+        status.insert(new_status_component);
+    }
+
+    void handle_regular_right(
+        dcel::DCEL & dcel,
+        std::set<StatusComponent, decltype(status_component_comparator)> & status,
+        std::vector<VertexType> const & vertex_types,
+        std::vector<std::pair<size_t, size_t>> const & vertex_neighbours,
+        std::set<size_t> const & outside_faces,
+        size_t vertex_index
+    ) noexcept
+    {
+        std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
+            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+        size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
+        size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
+        size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
+
+        size_t future_previous_neighbour = vertex_neighbours[vertex_index].first;
+
+        auto nearest_left_component = get_nearest_left_component(dcel, status, vertex_index);
+
+        StatusComponent nearest_left = *nearest_left_component;
+
+        if (vertex_types[nearest_left.helper] == VertexType::Merge)
+        {
+            size_t const helper = nearest_left.helper;
+            size_t const previous_neighbour_to_helper = nearest_left.previous_neighbour_to_helper;
+            size_t const next_neighbour_after_helper = nearest_left.next_neighbour_after_helper;
+
+            size_t const helper_edge_index =
+                get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
+                    dcel,
+                    helper,
+                    outside_faces,
+                    previous_neighbour_to_helper,
+                    next_neighbour_after_helper
+                ).first;
+
+            dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
+
+            future_previous_neighbour = helper;
+        }
+
+        status.erase(nearest_left_component);
+        nearest_left.helper = vertex_index;
+        nearest_left.previous_neighbour_to_helper = future_previous_neighbour;
+        nearest_left.next_neighbour_after_helper = vertex_neighbours[vertex_index].second;
+
+        status.insert(nearest_left);
+    }
+
+    void triangulation(dcel::DCEL & dcel) noexcept
+    {
+        std::set<size_t> const & outside_faces = get_outside_faces(dcel);
+
+        std::vector<VertexType> vertex_types(dcel.vertices.size(), VertexType::Undefined);
+        std::vector<std::pair<size_t, size_t>> vertex_neighbours(dcel.vertices.size());
+
+        for (size_t i = 0; i < vertex_types.size(); ++i)
+        {
+            std::pair<size_t, size_t> const previous_and_next_edges_to_current =
+                get_current_and_previous_and_next_edges_to_current_vertex(dcel, i, outside_faces).second;
+            size_t const previous_edge_to_current_index = previous_and_next_edges_to_current.first;
+            size_t const next_edge_after_current_index = previous_and_next_edges_to_current.second;
+
+            vertex_neighbours[i].first = dcel.edges[previous_edge_to_current_index].origin_vertex;
+            vertex_neighbours[i].second = dcel.edges[next_edge_after_current_index].origin_vertex;
+
+            Point const current_point = dcel.vertices[i].coordinate;
+            Point const previous_point = dcel.vertices[dcel.edges[previous_edge_to_current_index].origin_vertex].coordinate;
+            Point const next_point = dcel.vertices[dcel.edges[next_edge_after_current_index].origin_vertex].coordinate;
+
+            float const angle = angle_between_vectors(previous_point - current_point, next_point - current_point);
+
+            if (current_point.y < previous_point.y && current_point.y < next_point.y)
+            {
+                if (angle < epsilon)
+                {
+                    vertex_types[i] = VertexType::Start;
+                }
+                else
+                {
+                    vertex_types[i] = VertexType::Split;
+                }
+            }
+            else if (current_point.y > previous_point.y && current_point.y > next_point.y)
+            {
+                if (angle < epsilon)
+                {
+                    vertex_types[i] = VertexType::End;
+                }
+                else
+                {
+                    vertex_types[i] = VertexType::Merge;
+                }
+            }
+            else if (current_point.y < previous_point.y)
+            {
+                vertex_types[i] = VertexType::RegularLeft;
+            }
+            else if (current_point.y > previous_point.y)
+            {
+                vertex_types[i] = VertexType::RegularRight;
+            }
+        }
+
+        std::vector<size_t> vertices(dcel.vertices.size());
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            vertices[i] = i;
+        }
+
+        std::sort(vertices.begin(), vertices.end(), [&dcel](size_t a, size_t b) noexcept -> bool
+            {
+                frm::Point point_a = dcel.vertices[a].coordinate;
+                frm::Point point_b = dcel.vertices[b].coordinate;
+
+                if (abs(point_a.y - point_b.y) < frm::epsilon)
+                {
+                    return point_a.x < point_b.x;
+                }
+
+                return point_a.y < point_b.y;
+            });
+
+        std::set<StatusComponent, decltype(status_component_comparator)> status(status_component_comparator);
+
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            switch (vertex_types[vertices[i]])
+            {
+            case VertexType::Start:
+                handle_start(dcel, status, outside_faces, vertex_neighbours, vertices[i]);
+                break;
+            case VertexType::Split:
+                handle_split(dcel, status, vertex_types, vertex_neighbours, outside_faces, vertices[i]);
+                break;
+            case VertexType::End:
+                handle_end(dcel, status, vertex_types, vertex_neighbours, outside_faces, vertices[i]);
+                break;
+            case VertexType::Merge:
+                handle_merge(dcel, status, vertex_types, vertex_neighbours, outside_faces, vertices[i]);
+                break;
+            case VertexType::RegularLeft:
+                handle_regular_left(dcel, status, vertex_types, vertex_neighbours, outside_faces, vertices[i]);
+                break;
+            case VertexType::RegularRight:
+                handle_regular_right(dcel, status, vertex_types, vertex_neighbours, outside_faces, vertices[i]);
+                break;
+            default:
+                break;
+            }
+        }
+
+        size_t const face_count = dcel.faces.size();
+
+        for (size_t i = 0; i < face_count; ++i)
+        {
+            if (!is_outside_face(dcel, outside_faces, i))
+            {
+                triangulation_y_monotone(dcel, i);
+            }
+        }
     }
 
     bool spawn_triangulation_button(dcel::DCEL & dcel) noexcept

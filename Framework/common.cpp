@@ -6,6 +6,11 @@
 
 namespace frm
 {
+    Point operator-(Point a, Point b) noexcept
+    {
+        return { a.x - b.x, a.y - b.y };
+    }
+
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept
     {
         os << "[ " << point.x << " , " << point.y << " ] ";

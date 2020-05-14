@@ -23,7 +23,6 @@ int main()
                 int y = current_event.mouseButton.y;
 
                 current_face = frm::get_face_index(trapezoid_data_and_graph_root, { static_cast<float>(x), static_cast<float>(y) });
-                std::cout << current_face << '\n';
             }
         });
 
