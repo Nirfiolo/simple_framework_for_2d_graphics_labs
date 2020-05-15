@@ -51,7 +51,7 @@ namespace frm
         return finding_vertex_index;
     }
 
-    bool is_diagonal(dcel::DCEL const & dcel, size_t from_edge_index, size_t to_edge_index, size_t wall_edge_index) noexcept
+    bool is_diagonal(dcel::DCEL const & dcel, size_t from_edge_index, size_t to_edge_index, size_t wall_edge_index, bool is_left_side) noexcept
     {
         size_t const from_vertex_index = dcel.edges[from_edge_index].origin_vertex;
         size_t const to_vertex_index = dcel.edges[to_edge_index].origin_vertex;
@@ -61,7 +61,7 @@ namespace frm
         Point const to_point = dcel.vertices[to_vertex_index].coordinate;
         Point const wall_point = dcel.vertices[wall_vertex_index].coordinate;
 
-        return !std::signbit((to_point.x - from_point.x) * (wall_point.y - from_point.y) - (to_point.y - from_point.y) * (wall_point.x - from_point.x));
+        return (is_left_side == std::signbit((to_point.x - from_point.x) * (wall_point.y - from_point.y) - (to_point.y - from_point.y) * (wall_point.x - from_point.x)));
     }
 
     void triangulation_y_monotone(dcel::DCEL & dcel, size_t face_index) noexcept
@@ -159,22 +159,7 @@ namespace frm
                             }
                         }
                     }
-                    if (edges[i].second)
-                    {
-                        if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
-                        {
-                            current_right_edge = new_edges_index.second;
-                        }
-                        else if (dcel.edges[new_edges_index.second].origin_vertex == dcel.edges[current_right_edge].origin_vertex)
-                        {
-                            current_right_edge = new_edges_index.first;
-                        }
-                        else
-                        {
-                            assert(false && "Error edge adding");
-                        }
-                    }
-                    else
+                    if (!edges[i].second)
                     {
                         if (dcel.edges[new_edges_index.first].origin_vertex == dcel.edges[edges[current_edge_index].first].origin_vertex)
                         {
@@ -212,7 +197,7 @@ namespace frm
                 size_t current_edge_index = stack.back();
                 stack.pop_back();
 
-                while (!stack.empty() && is_diagonal(dcel, edges[i].first, edges[stack.back()].first, edges[current_edge_index].first))
+                while (!stack.empty() && is_diagonal(dcel, edges[i].first, edges[stack.back()].first, edges[current_edge_index].first, edges[i].second))
                 {
                     std::pair<size_t, size_t> new_edges_index = dcel::add_edge_between_two_edges(dcel, edges[i].first, edges[stack.back()].first);
                     if (edges[i].second)
@@ -259,7 +244,7 @@ namespace frm
         {
             size_t const current_edge_index = stack.back();
             stack.pop_back();
-            dcel::add_edge_between_two_edges(dcel, edges.back().first, edges[current_edge_index].first);
+            dcel::add_edge_between_two_edges(dcel, edges.back().first, edges[stack.back()].first);
         }
     }
 
@@ -500,15 +485,14 @@ namespace frm
 
             if (vertex_types[helper] == VertexType::Merge)
             {
-                std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_helper =
+                size_t const helper_edge_index =
                     get_current_and_previous_and_next_edges_to_current_vertex_by_neighbours(
                         dcel,
                         helper,
                         outside_faces,
                         previous_neighbour_to_helper,
                         next_neighbour_after_helper
-                    );
-                size_t const helper_edge_index = current_and_previous_and_next_edges_to_current.first;
+                    ).first;
 
                 dcel::add_edge_between_two_edges(dcel, current_edge_index, helper_edge_index);
             }
@@ -790,33 +774,38 @@ namespace frm
 
             float const angle = angle_between_vectors(previous_point - current_point, next_point - current_point);
 
-            if (current_point.y < previous_point.y && current_point.y < next_point.y)
+            if (current_point.y < previous_point.y && current_point.y <= next_point.y && angle < epsilon)
             {
-                if (angle < epsilon)
+                vertex_types[i] = VertexType::Start;
+            }
+            else if (current_point.y <= previous_point.y && current_point.y < next_point.y && angle > -epsilon)
+            {
+                vertex_types[i] = VertexType::Split;
+            }
+            else if (current_point.y > previous_point.y && current_point.y >= next_point.y && angle < epsilon)
+            {
+                vertex_types[i] = VertexType::End;
+            }
+            else if (current_point.y >= previous_point.y && current_point.y > next_point.y && angle >- epsilon)
+            {
+                vertex_types[i] = VertexType::Merge;
+            }
+            else if (abs(current_point.y - next_point.y) < epsilon && abs(current_point.y - previous_point.y) < epsilon)
+            {
+                if (current_point.x < next_point.x)
                 {
-                    vertex_types[i] = VertexType::Start;
+                    vertex_types[i] = VertexType::RegularRight;
                 }
                 else
                 {
-                    vertex_types[i] = VertexType::Split;
+                    vertex_types[i] = VertexType::RegularLeft;
                 }
             }
-            else if (current_point.y > previous_point.y && current_point.y > next_point.y)
-            {
-                if (angle < epsilon)
-                {
-                    vertex_types[i] = VertexType::End;
-                }
-                else
-                {
-                    vertex_types[i] = VertexType::Merge;
-                }
-            }
-            else if (current_point.y < previous_point.y)
+            else if (current_point.y >= next_point.y && current_point.y <= previous_point.y)
             {
                 vertex_types[i] = VertexType::RegularLeft;
             }
-            else if (current_point.y > previous_point.y)
+            else if (current_point.y <= next_point.y && current_point.y >= previous_point.y)
             {
                 vertex_types[i] = VertexType::RegularRight;
             }
@@ -869,7 +858,7 @@ namespace frm
                 break;
             }
         }
-
+        
         size_t const face_count = dcel.faces.size();
 
         for (size_t i = 0; i < face_count; ++i)

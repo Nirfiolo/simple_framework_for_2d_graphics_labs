@@ -2,6 +2,8 @@
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
 
+#include "imgui/imgui.h"
+
 
 int main()
 {
@@ -15,18 +17,23 @@ int main()
 
     frm::Application application{};
 
-    application.set_on_event([&dcel, &current_face, &trapezoid_data_and_graph_root](sf::Event current_event) noexcept
+    bool need_trapezoid_data = true;
+
+    application.set_on_event([&dcel, &current_face, &trapezoid_data_and_graph_root, &need_trapezoid_data](sf::Event current_event) noexcept
         {
             if (current_event.type == sf::Event::MouseButtonPressed)
             {
                 int x = current_event.mouseButton.x;
                 int y = current_event.mouseButton.y;
 
-                current_face = frm::get_face_index(trapezoid_data_and_graph_root, { static_cast<float>(x), static_cast<float>(y) });
+                if (need_trapezoid_data)
+                {
+                    current_face = frm::get_face_index(trapezoid_data_and_graph_root, { static_cast<float>(x), static_cast<float>(y) });
+                }
             }
         });
 
-    application.set_on_update([&dcel, &trapezoid_data_and_graph_root, &current_face](float dt, sf::RenderWindow & window) noexcept
+    application.set_on_update([&dcel, &trapezoid_data_and_graph_root, &current_face, &need_trapezoid_data](float dt, sf::RenderWindow & window) noexcept
         {
             frm::dcel::draw(dcel, window);
 
@@ -36,16 +43,25 @@ int main()
 
             is_dirty |= frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
 
-            if (is_dirty)
+            if (ImGui::Begin("Need trapezoid data"))
             {
-                trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
-                current_face = trapezoid_data_and_graph_root.first;
+                ImGui::Checkbox("need_trapezoid_data", &need_trapezoid_data);
             }
+            ImGui::End();
 
-            if (current_face != trapezoid_data_and_graph_root.first)
-            {
-                float color[4] = { 0.f, 0.f, 1.f, 0.5f };
-                frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
+            if (need_trapezoid_data)
+            {            
+                if (is_dirty)
+                {
+                    trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
+                    current_face = trapezoid_data_and_graph_root.first;
+                }
+
+                if (current_face != trapezoid_data_and_graph_root.first)
+                {
+                    float color[4] = { 0.f, 0.f, 1.f, 0.5f };
+                    frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
+                }
             }
         });
 

@@ -67,6 +67,8 @@ namespace frm
         
         std::pair<size_t, size_t> add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
 
+        void add_face_from_three_points(DCEL & dcel, size_t first_vertex_index, size_t second_vertex_index, size_t third_vertex_index, size_t face_index) noexcept;
+
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept;
 
         // TODO: add remove

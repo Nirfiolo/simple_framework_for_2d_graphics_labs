@@ -431,7 +431,89 @@ namespace frm
                 current_index = dcel.edges[current_index].next_edge;
             } while (current_index != begin);
 
+            if (dcel.edges[dcel.faces[current_face_index].edge].incident_face != current_face_index)
+            {
+                dcel.free_faces.push_back(current_face_index);
+                dcel.faces[current_face_index].is_exist = false;
+
+                // TODO: make more productive
+
+                for (size_t i = 0; i < dcel.edges.size(); ++i)
+                {
+                    if (dcel.edges[i].incident_face == current_face_index)
+                    {
+                        dcel.edges[i].incident_face = new_face_index;
+                    }
+                }
+            }
+
             return { edge_from_begin_to_end_index, edge_from_end_to_begin_index };
+        }
+
+        void add_face_from_three_points(DCEL & dcel, size_t first_vertex_index, size_t second_vertex_index, size_t third_vertex_index, size_t face_index) noexcept
+        {
+            size_t const new_face_index = get_free_face_index(dcel);
+
+            size_t const from_first_to_second_index = get_free_edge_index(dcel);
+            size_t const from_second_to_first_index = get_free_edge_index(dcel);
+            size_t const from_third_to_second_index = get_free_edge_index(dcel);
+            size_t const from_second_to_third_index = get_free_edge_index(dcel);
+            size_t const from_third_to_first_index = get_free_edge_index(dcel);
+            size_t const from_first_to_third_index = get_free_edge_index(dcel);
+
+            DCEL::Face & new_face = dcel.faces[new_face_index];
+            new_face.edge = from_first_to_second_index;
+
+            DCEL::Vertex & first_vertex = dcel.vertices[first_vertex_index];
+            DCEL::Vertex & second_vertex = dcel.vertices[second_vertex_index];
+            DCEL::Vertex & third_vertex = dcel.vertices[third_vertex_index];
+
+            first_vertex.incident_edge = from_first_to_second_index;
+            second_vertex.incident_edge = from_second_to_third_index;
+            third_vertex.incident_edge = from_third_to_first_index;
+
+            DCEL::Edge & from_first_to_second = dcel.edges[from_first_to_second_index];
+            DCEL::Edge & from_second_to_first = dcel.edges[from_second_to_first_index];
+            DCEL::Edge & from_third_to_second = dcel.edges[from_third_to_second_index];
+            DCEL::Edge & from_second_to_third = dcel.edges[from_second_to_third_index];
+            DCEL::Edge & from_third_to_first = dcel.edges[from_third_to_first_index];
+            DCEL::Edge & from_first_to_third = dcel.edges[from_first_to_third_index];
+
+            from_first_to_second.origin_vertex = first_vertex_index;
+            from_first_to_second.twin_edge = from_second_to_first_index;
+            from_first_to_second.incident_face = new_face_index;
+            from_first_to_second.next_edge = from_second_to_third_index;
+            from_first_to_second.previous_edge = from_third_to_first_index;
+
+            from_second_to_first.origin_vertex = second_vertex_index;
+            from_second_to_first.twin_edge = from_first_to_second_index;
+            from_second_to_first.incident_face = face_index;
+            from_second_to_first.next_edge = from_first_to_third_index;
+            from_second_to_first.previous_edge = from_third_to_second_index;
+
+            from_second_to_third.origin_vertex = second_vertex_index;
+            from_second_to_third.twin_edge = from_third_to_second_index;
+            from_second_to_third.incident_face = new_face_index;
+            from_second_to_third.next_edge = from_third_to_first_index;
+            from_second_to_third.previous_edge = from_first_to_second_index;
+
+            from_third_to_second.origin_vertex = third_vertex_index;
+            from_third_to_second.twin_edge = from_second_to_third_index;
+            from_third_to_second.incident_face = face_index;
+            from_third_to_second.next_edge = from_second_to_first_index;
+            from_third_to_second.previous_edge = from_first_to_third_index;
+
+            from_third_to_first.origin_vertex = third_vertex_index;
+            from_third_to_first.twin_edge = from_first_to_third_index;
+            from_third_to_first.incident_face = new_face_index;
+            from_third_to_first.next_edge = from_first_to_second_index;
+            from_third_to_first.previous_edge = from_second_to_third_index;
+
+            from_first_to_third.origin_vertex = first_vertex_index;
+            from_first_to_third.twin_edge = from_third_to_first_index;
+            from_first_to_third.incident_face = face_index;
+            from_first_to_third.next_edge = from_third_to_second_index;
+            from_first_to_third.previous_edge = from_second_to_first_index;
         }
 
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept

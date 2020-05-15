@@ -189,7 +189,7 @@ namespace frm
         {
             bool is_dirty = false;
 
-            ImGui::Columns(2);
+            ImGui::Columns(3);
 
             static size_t current = std::numeric_limits<size_t>::max();
 
@@ -211,6 +211,64 @@ namespace frm
             {
                 ImGui::Text("Current face doesn't exist");
             }
+
+            ImGui::NextColumn();
+
+            if (current < dcel.faces.size() && dcel.faces[current].is_exist)
+            {
+                static bool need_add_face = true;
+                ImGui::Checkbox("Add face", &need_add_face);
+                if (need_add_face)
+                {
+                    static size_t first_vertex_index = std::numeric_limits<size_t>::max();
+                    static size_t second_vertex_index = std::numeric_limits<size_t>::max();
+                    static size_t third_vertex_index = std::numeric_limits<size_t>::max();
+
+                    ImGui::Text("Choose three free vertex on clockwise");
+
+                    show_indexed_combo(first_vertex_index, dcel.vertices.size(), "First vertex index");
+                    show_indexed_combo(second_vertex_index, dcel.vertices.size(), "Second vertex index");
+                    show_indexed_combo(third_vertex_index, dcel.vertices.size(), "Third vertex index");
+
+                    if (first_vertex_index != std::numeric_limits<size_t>::max())
+                    {
+                        float circle_color[4] = { 1.f, 1.0f, 0.f, 0.7f };
+                        float const radius = 10.f;
+
+                        Point new_vertex = dcel.vertices[first_vertex_index].coordinate;
+
+                        draw_vertex_highlighted(new_vertex, circle_color, radius, window);
+                    }
+                    if (second_vertex_index != std::numeric_limits<size_t>::max())
+                    {
+                        float circle_color[4] = { 1.f, 0.0f, 1.f, 0.7f };
+                        float const radius = 10.f;
+
+                        Point new_vertex = dcel.vertices[second_vertex_index].coordinate;
+
+                        draw_vertex_highlighted(new_vertex, circle_color, radius, window);
+                    }
+                    if (third_vertex_index != std::numeric_limits<size_t>::max())
+                    {
+                        float circle_color[4] = { 0.f, 1.0f, 1.f, 0.7f };
+                        float const radius = 10.f;
+
+                        Point new_vertex = dcel.vertices[third_vertex_index].coordinate;
+
+                        draw_vertex_highlighted(new_vertex, circle_color, radius, window);
+                    }
+
+                    if (first_vertex_index != std::numeric_limits<size_t>::max() &&
+                        second_vertex_index != std::numeric_limits<size_t>::max() &&
+                        third_vertex_index != std::numeric_limits<size_t>::max() &&
+                        ImGui::Button("Add Face"))
+                    {
+                        add_face_from_three_points(dcel, first_vertex_index, second_vertex_index, third_vertex_index, current);
+                        is_dirty = true;
+                    }
+                }
+            }
+
             return is_dirty;
         }
 

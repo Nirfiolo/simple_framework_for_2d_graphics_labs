@@ -88,14 +88,14 @@ namespace frm
         return 0;
     }
 
-    size_t get_free_trapezoid_index(TrapezoidData & trapezoid_data) noexcept
+    size_t get_free_trapezoid_index(TrapezoidData & trapezoid_data) noexcept(!IS_DEBUG)
     {
         size_t const index = trapezoid_data.trapezoids.size();
         trapezoid_data.trapezoids.push_back({});
         return index;
     }
 
-    void update_famous_neighbors(TrapezoidData & trapezoid_data, size_t trapezoid_index) noexcept
+    void update_famous_neighbors(TrapezoidData & trapezoid_data, size_t trapezoid_index) noexcept(!IS_DEBUG)
     {
         Trapezoid const & trapezoid = trapezoid_data.trapezoids[trapezoid_index];
 
@@ -128,7 +128,7 @@ namespace frm
         size_t begin_index,
         size_t end_index,
         size_t line_index
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         bool const begin_is_existing_end = trapezoid_data.trapezoids[trapezoid->index_by_type].left_end_index == begin_index;
         bool const end_is_existing_end = trapezoid_data.trapezoids[trapezoid->index_by_type].right_end_index == end_index;
@@ -435,7 +435,7 @@ namespace frm
         size_t end_index,
         size_t line_index,
         bool is_right_end_of_begin_trapezoid_over_line
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         size_t const old_trapezoid_index = trapezoid->index_by_type;
         Trapezoid const old_trapezoid = trapezoid_data.trapezoids[old_trapezoid_index];
@@ -502,7 +502,7 @@ namespace frm
         size_t end_index,
         size_t line_index,
         bool is_right_end_of_begin_trapezoid_over_line
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         size_t const old_trapezoid_index = trapezoid->index_by_type;
         Trapezoid const old_trapezoid = trapezoid_data.trapezoids[old_trapezoid_index];
@@ -595,7 +595,7 @@ namespace frm
         size_t line_index,
         bool is_last_point_over_line,
         bool is_current_point_over_line
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         size_t const old_trapezoid_index = trapezoid->index_by_type;
         Trapezoid const old_trapezoid = trapezoid_data.trapezoids[old_trapezoid_index];
@@ -701,7 +701,7 @@ namespace frm
         size_t end_index,
         size_t line_index,
         bool is_last_point_over_line
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         size_t const old_trapezoid_index = trapezoid->index_by_type;
         Trapezoid const old_trapezoid = trapezoid_data.trapezoids[old_trapezoid_index];
@@ -798,7 +798,7 @@ namespace frm
         size_t end_index,
         size_t line_index,
         bool is_last_point_over_line
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         size_t const old_trapezoid_index = trapezoid->index_by_type;
         Trapezoid const old_trapezoid = trapezoid_data.trapezoids[old_trapezoid_index];
@@ -917,7 +917,7 @@ namespace frm
         size_t begin_index,
         size_t end_index,
         size_t line_index
-    ) noexcept
+    ) noexcept(!IS_DEBUG)
     {
         std::shared_ptr<GraphNode> last_top_node;
         std::shared_ptr<GraphNode> last_bottom_node;
