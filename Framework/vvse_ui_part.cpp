@@ -1,4 +1,4 @@
-#include "vvse.h"
+#include "vvve.h"
 #include "common_ui_part.h"
 
 #include "imgui/imgui.h"
@@ -11,14 +11,14 @@
 
 namespace frm
 {
-    //vector of vertices and set of edges 
-    namespace vvse
+    //vector of vertices and vector of edges 
+    namespace vvve
     {
-        VVSE::edge_t get_edge_by_index(VVSE & vvse, size_t index) noexcept(!IS_DEBUG)
+        VVVE::edge_t get_edge_by_index(VVVE & vvve, size_t index) noexcept(!IS_DEBUG)
         {
             size_t current_index = 0;
 
-            for (VVSE::edge_t const & current : vvse.edges)
+            for (VVVE::edge_t const & current : vvve.edges)
             {
                 if (index == current_index)
                 {
@@ -31,7 +31,7 @@ namespace frm
             return {};
         }
 
-        bool show_vertices(VVSE & vvse, sf::RenderWindow & window) noexcept
+        bool show_vertices(VVVE & vvve, sf::RenderWindow & window) noexcept
         {
             bool is_dirty = false;
 
@@ -39,16 +39,16 @@ namespace frm
 
             static size_t current = std::numeric_limits<size_t>::max();
 
-            show_indexed_combo(current, vvse.vertices.size(), "Vertex");
+            show_indexed_combo(current, vvve.vertices.size(), "Vertex");
 
             ImGui::NextColumn();
 
-            if (current < vvse.vertices.size())
+            if (current < vvve.vertices.size())
             {
                 static float circle_color[4] = { 1.f, 0.0f, 0.f, 0.7f };
                 static float radius = 10.f;
 
-                Point & point = vvse.vertices[current].coordinate;
+                Point & point = vvve.vertices[current].coordinate;
                 draw_vertex_highlighted(point, circle_color, radius, window);
 
                 is_dirty |= ImGui::SliderFloat("X", &point.x, 0.f, 1000.f);
@@ -76,14 +76,14 @@ namespace frm
 
                 if (ImGui::Button("Add vertex"))
                 {
-                    add_vertex(vvse, new_vertex);
+                    add_vertex(vvve, new_vertex);
                     is_dirty = true;
                 }
             }
             return is_dirty;
         }
 
-        bool show_edges(VVSE & vvse, sf::RenderWindow & window) noexcept
+        bool show_edges(VVVE & vvve, sf::RenderWindow & window) noexcept
         {
             bool is_dirty = false;
 
@@ -91,21 +91,21 @@ namespace frm
 
             static size_t current = std::numeric_limits<size_t>::max();
 
-            show_indexed_combo(current, vvse.edges.size(), "Edge");
+            show_indexed_combo(current, vvve.edges.size(), "Edge");
 
             ImGui::NextColumn();
 
-            if (current < vvse.edges.size())
+            if (current < vvve.edges.size())
             {
                 static float color[4] = { 1.f, 0.0f, 0.f, 0.7f };
                 static float width = 10.f;
 
-                VVSE::edge_t edge = get_edge_by_index(vvse, current);
+                VVVE::edge_t edge = get_edge_by_index(vvve, current);
 
                 size_t const begin_origin = edge.first;
-                Point & begin_point = vvse.vertices[begin_origin].coordinate;
+                Point & begin_point = vvve.vertices[begin_origin].coordinate;
                 size_t const end_origin = edge.second;
-                Point & end_point = vvse.vertices[end_origin].coordinate;
+                Point & end_point = vvve.vertices[end_origin].coordinate;
 
                 draw_edge_highlighted(begin_point, end_point, color, width, window);
 
@@ -131,26 +131,26 @@ namespace frm
                 static size_t begin_vertex = std::numeric_limits<size_t>::max();
                 static size_t end_vertex = std::numeric_limits<size_t>::max();
 
-                show_indexed_combo(begin_vertex, vvse.vertices.size(), "Begin edge");
-                show_indexed_combo(end_vertex, vvse.vertices.size(), "End edge");
+                show_indexed_combo(begin_vertex, vvve.vertices.size(), "Begin edge");
+                show_indexed_combo(end_vertex, vvve.vertices.size(), "End edge");
 
-                if (begin_vertex < vvse.vertices.size())
+                if (begin_vertex < vvve.vertices.size())
                 {
-                    Point const & point = vvse.vertices[begin_vertex].coordinate;
+                    Point const & point = vvve.vertices[begin_vertex].coordinate;
                     draw_vertex_highlighted(point, color, radius, window);
                 }
 
-                if (end_vertex < vvse.vertices.size())
+                if (end_vertex < vvve.vertices.size())
                 {
-                    Point const & point = vvse.vertices[end_vertex].coordinate;
+                    Point const & point = vvve.vertices[end_vertex].coordinate;
                     draw_vertex_highlighted(point, color, radius, window);
                 }
 
-                if (begin_vertex < vvse.vertices.size() && begin_vertex != end_vertex)
+                if (begin_vertex < vvve.vertices.size() && begin_vertex != end_vertex)
                 {
                     if (ImGui::Button("Add adge between two vetrices"))
                     {
-                        add_edge_between_two_vertices(vvse, begin_vertex, end_vertex);
+                        add_edge_between_two_vertices(vvve, begin_vertex, end_vertex);
                         is_dirty = true;
                     }
                 }
@@ -158,7 +158,7 @@ namespace frm
             return is_dirty;
         }
 
-        bool spawn_ui(VVSE & vvse, sf::RenderWindow & window, std::string const & path) noexcept
+        bool spawn_ui(VVVE & vvve, sf::RenderWindow & window, std::string const & path) noexcept
         {
             bool is_dirty = false;
 
@@ -171,11 +171,11 @@ namespace frm
                 {
                     if (ImGui::MenuItem("Save"))
                     {
-                        safe_to_file(path, vvse);
+                        safe_to_file(path, vvve);
                     }
                     if (ImGui::MenuItem("Load"))
                     {
-                        load_from_file(path, vvse);
+                        load_from_file(path, vvve);
                         is_dirty = true;
                     }
                     ImGui::EndMenuBar();
@@ -206,11 +206,11 @@ namespace frm
 
                 if (current_item == items[0])
                 {
-                    is_dirty |= show_vertices(vvse, window);
+                    is_dirty |= show_vertices(vvve, window);
                 }
                 if (current_item == items[1])
                 {
-                    is_dirty |= show_edges(vvse, window);
+                    is_dirty |= show_edges(vvve, window);
                 }
             }
             ImGui::End();
@@ -218,20 +218,20 @@ namespace frm
             return is_dirty;
         }
 
-        void draw(VVSE const & vvse, sf::RenderWindow & window, sf::Color const & color) noexcept
+        void draw(VVVE const & vvve, sf::RenderWindow & window, sf::Color const & color) noexcept
         {
-            sf::VertexArray vertices{ sf::Lines, 2 * vvse.edges.size() };
+            sf::VertexArray vertices{ sf::Lines, 2 * vvve.edges.size() };
 
             size_t index = 0;
 
-            for (VVSE::edge_t const & current : vvse.edges)
+            for (VVVE::edge_t const & current : vvve.edges)
             {
                 size_t const begin_origin = current.first;
-                vertices[2 * index].position = { vvse.vertices[begin_origin].coordinate.x, vvse.vertices[begin_origin].coordinate.y };
+                vertices[2 * index].position = { vvve.vertices[begin_origin].coordinate.x, vvve.vertices[begin_origin].coordinate.y };
                 vertices[2 * index].color = color;
 
                 size_t const end_origin = current.second;
-                vertices[2 * index + 1].position = { vvse.vertices[end_origin].coordinate.x, vvse.vertices[end_origin].coordinate.y };
+                vertices[2 * index + 1].position = { vvve.vertices[end_origin].coordinate.x, vvve.vertices[end_origin].coordinate.y };
                 vertices[2 * index + 1].color = color;
 
                 ++index;
@@ -239,10 +239,10 @@ namespace frm
 
             window.draw(vertices);
 
-            for (size_t i = 0; i < vvse.vertices.size(); ++i)
+            for (size_t i = 0; i < vvve.vertices.size(); ++i)
             {
                 float const radius = 3.f;
-                Point const point = vvse.vertices[i].coordinate;
+                Point const point = vvve.vertices[i].coordinate;
 
                 sf::CircleShape circle{ radius };
                 circle.setFillColor(color);

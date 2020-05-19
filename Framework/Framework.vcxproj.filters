@@ -57,9 +57,6 @@
     <ClCompile Include="trapezoidal_decomposition.cpp">
       <Filter>Algorithms</Filter>
     </ClCompile>
-    <ClCompile Include="vvse.cpp">
-      <Filter>Structs</Filter>
-    </ClCompile>
     <ClCompile Include="vvse_ui_part.cpp">
       <Filter>Structs</Filter>
     </ClCompile>
@@ -68,6 +65,9 @@
     </ClCompile>
     <ClCompile Include="common_ui_part.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vvve.cpp">
+      <Filter>Structs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -110,14 +110,14 @@
     <ClInclude Include="trapezoidal_decomposition.h">
       <Filter>Algorithms</Filter>
     </ClInclude>
-    <ClInclude Include="vvse.h">
-      <Filter>Structs</Filter>
-    </ClInclude>
     <ClInclude Include="common.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="common_ui_part.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vvve.h">
+      <Filter>Structs</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
