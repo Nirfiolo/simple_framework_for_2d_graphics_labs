@@ -22,6 +22,9 @@
     <Filter Include="Algorithms">
       <UniqueIdentifier>{1079b06c-dfe0-4d72-9552-c2eb25f1127a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{98ca62c3-8e6c-4bb6-a2f2-3ee56a7d1382}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui\imgui.cpp">
@@ -42,9 +45,6 @@
     <ClCompile Include="Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="common.cpp">
-      <Filter>Structs</Filter>
-    </ClCompile>
     <ClCompile Include="dcel_ui_part.cpp">
       <Filter>Structs</Filter>
     </ClCompile>
@@ -56,6 +56,18 @@
     </ClCompile>
     <ClCompile Include="trapezoidal_decomposition.cpp">
       <Filter>Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="vvse.cpp">
+      <Filter>Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="vvse_ui_part.cpp">
+      <Filter>Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="common.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="common_ui_part.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -92,14 +104,20 @@
     <ClInclude Include="dcel.h">
       <Filter>Structs</Filter>
     </ClInclude>
-    <ClInclude Include="common.h">
-      <Filter>Structs</Filter>
-    </ClInclude>
     <ClInclude Include="triangulation.h">
       <Filter>Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="trapezoidal_decomposition.h">
       <Filter>Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="vvse.h">
+      <Filter>Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common_ui_part.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

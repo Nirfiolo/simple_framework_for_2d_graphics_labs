@@ -90,6 +90,7 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="common.cpp" />
+    <ClCompile Include="common_ui_part.cpp" />
     <ClCompile Include="dcel.cpp" />
     <ClCompile Include="dcel_ui_part.cpp" />
     <ClCompile Include="imgui\imgui-SFML.cpp" />
@@ -99,6 +100,8 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="trapezoidal_decomposition.cpp" />
     <ClCompile Include="triangulation.cpp" />
+    <ClCompile Include="vvse.cpp" />
+    <ClCompile Include="vvse_ui_part.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -106,6 +109,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="common_ui_part.h" />
     <ClInclude Include="dcel.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui-SFML.h" />
@@ -117,6 +121,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="trapezoidal_decomposition.h" />
     <ClInclude Include="triangulation.h" />
+    <ClInclude Include="vvse.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

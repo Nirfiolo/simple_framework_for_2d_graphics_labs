@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
+#include "vvse.h"
 
 #include "imgui/imgui.h"
 
@@ -19,6 +20,12 @@ int main()
 
     bool need_trapezoid_data = true;
 
+
+    frm::vvse::VVSE vvse{};
+
+    frm::vvse::load_from_file("Vvse_1.dat", vvse);
+
+
     application.set_on_event([&dcel, &current_face, &trapezoid_data_and_graph_root, &need_trapezoid_data](sf::Event current_event) noexcept
         {
             if (current_event.type == sf::Event::MouseButtonPressed)
@@ -33,15 +40,19 @@ int main()
             }
         });
 
-    application.set_on_update([&dcel, &trapezoid_data_and_graph_root, &current_face, &need_trapezoid_data](float dt, sf::RenderWindow & window) noexcept
+    application.set_on_update([&dcel, &trapezoid_data_and_graph_root, &current_face, &need_trapezoid_data, &vvse](float dt, sf::RenderWindow & window) noexcept
         {
             frm::dcel::draw(dcel, window);
+            frm::vvse::draw(vvse, window);
 
-            bool is_dirty = false;
+            bool is_dirty_dcel = false;
+            bool is_dirty_vvse = false;
 
-            is_dirty |= frm::spawn_triangulation_button(dcel);
+            is_dirty_dcel |= frm::spawn_triangulation_button(dcel);
 
-            is_dirty |= frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+            is_dirty_dcel |= frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+
+            is_dirty_vvse |= frm::vvse::spawn_ui(vvse, window, "Vvse_1.dat");
 
             if (ImGui::Begin("Need trapezoid data"))
             {
@@ -51,7 +62,7 @@ int main()
 
             if (need_trapezoid_data)
             {            
-                if (is_dirty)
+                if (is_dirty_dcel)
                 {
                     trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
                     current_face = trapezoid_data_and_graph_root.first;
