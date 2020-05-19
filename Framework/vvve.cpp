@@ -50,7 +50,7 @@ namespace frm
             size_t edges_size;
             is >> edges_size;
 
-            vvve.edges.resize(vertices_size);
+            vvve.edges.resize(edges_size);
             for (size_t i = 0; i < edges_size; ++i)
             {
                 is >> additional_symbols >> vvve.edges[i].first >>
