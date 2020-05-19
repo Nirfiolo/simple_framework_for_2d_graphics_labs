@@ -50,6 +50,8 @@ namespace frm
             size_t edges_size;
             is >> edges_size;
 
+            vvse.edges.clear();
+
             for (size_t i = 0; i < edges_size; ++i)
             {
                 VVSE::edge_t edge{};
