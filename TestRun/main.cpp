@@ -14,10 +14,6 @@ int main()
     frm::dcel::DCEL dcel{};
 
     frm::dcel::load_from_file("Dcel_1.dat", dcel);
-  
-    frm::vvve::VVVE vvve{};
-
-    frm::vvve::load_from_file("Vvse_1.dat", vvve);
 
     frm::trapezoid_data_and_graph_root_t trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
 
@@ -60,7 +56,6 @@ int main()
         });
 
     application.set_on_update([&dcel,
-        &vvve,
         &trapezoid_data_and_graph_root,
         &current_vertex,
         &current_edge,
@@ -70,16 +65,12 @@ int main()
     ](float dt, sf::RenderWindow & window) noexcept
         {
             frm::dcel::draw(dcel, window);
-            frm::vvve::draw(vvve, window);
 
             bool is_dirty_trapezoid = false;
-            bool is_dirty_vvve = false;
 
             is_dirty_trapezoid |= frm::spawn_triangulation_button(dcel);
 
             is_dirty_trapezoid |= frm::dcel::spawn_ui(dcel, current_vertex, current_edge, current_face,  window, "Dcel_1.dat", is_dirty);
-
-            is_dirty_vvve |= frm::vvve::spawn_ui(vvve, window, "Vvse_1.dat");
 
             if (ImGui::Begin("Need trapezoid data"))
             {
