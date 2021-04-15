@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
+#include "quick_hull.h"
 #include "common_ui_part.h"
 #include "nearest_point.h"
 #include "nearest_line.h"
@@ -14,6 +15,10 @@ int main()
     frm::dcel::DCEL dcel{};
 
     frm::dcel::load_from_file("Dcel_1.dat", dcel);
+
+    frm::vvve::VVVE vvve{};
+
+    frm::vvve::load_from_file("Vvse_1.dat", vvve);
 
     frm::trapezoid_data_and_graph_root_t trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
 
@@ -56,6 +61,7 @@ int main()
         });
 
     application.set_on_update([&dcel,
+        &vvve,
         &trapezoid_data_and_graph_root,
         &current_vertex,
         &current_edge,
@@ -75,6 +81,21 @@ int main()
             if (ImGui::Begin("Need trapezoid data"))
             {
                 ImGui::Checkbox("need_trapezoid_data", &need_trapezoid_data);
+            }
+            ImGui::End();
+
+            frm::vvve::draw(vvve, window);
+
+            bool is_dirty_vvve = false;
+
+            is_dirty_vvve |= frm::vvve::spawn_ui(vvve, window, "Vvse_1.dat");
+
+            if (ImGui::Begin("QuickHull"))
+            {
+                if (ImGui::Button("Run"))
+                {
+                    frm::quick_hull(vvve);
+                }
             }
             ImGui::End();
 

@@ -75,6 +75,9 @@
     <ClCompile Include="vvve.cpp">
       <Filter>Structs</Filter>
     </ClCompile>
+    <ClCompile Include="quick_hull.cpp">
+      <Filter>Algorithms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -130,6 +133,9 @@
     </ClInclude>
     <ClInclude Include="vvve.h">
       <Filter>Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="quick_hull.h">
+      <Filter>Algorithms</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
