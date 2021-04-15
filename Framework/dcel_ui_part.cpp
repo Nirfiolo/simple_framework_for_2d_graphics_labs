@@ -11,6 +11,11 @@ namespace frm
 {
     namespace dcel
     {
+        char const * items[] = { "Vertices", "Faces", "Edges" };
+
+        static char const * current_item = items[0];
+
+
         void show_indexed_combo(size_t & current, size_t size, char const * lable) noexcept
         {
             if (ImGui::BeginCombo(lable, current == std::numeric_limits<size_t>::max() ?
@@ -115,13 +120,19 @@ namespace frm
             draw_vertex_highlighted(begin_point, color, width, window);
         }
 
-        bool show_vertices(DCEL & dcel, sf::RenderWindow & window) noexcept
+        bool show_vertices(DCEL & dcel, size_t current_vertex, sf::RenderWindow & window, bool & is_dirty) noexcept
         {
-            bool is_dirty = false;
+            bool is_dirty_vertices = false;
 
             ImGui::Columns(3);
 
             static size_t current = std::numeric_limits<size_t>::max();
+
+            if (is_dirty)
+            {
+                current = current_vertex;
+                is_dirty = false;
+            }
 
             show_indexed_combo(current, dcel.vertices.size(), "Vertex");
 
@@ -135,8 +146,8 @@ namespace frm
                 Point & point = dcel.vertices[current].coordinate;
                 draw_vertex_highlighted(point, circle_color, radius, window);
 
-                is_dirty |= ImGui::SliderFloat("X", &point.x, 0.f, 1000.f);
-                is_dirty |= ImGui::SliderFloat("Y", &point.y, 0.f, 1000.f);
+                is_dirty_vertices |= ImGui::SliderFloat("X", &point.x, 0.f, 1000.f);
+                is_dirty_vertices |= ImGui::SliderFloat("Y", &point.y, 0.f, 1000.f);
                 ImGui::Text("Edge %d", static_cast<int>(dcel.vertices[current].incident_edge));
 
                 ImGui::SliderFloat("Radius", &radius, 0.01f, 100.f);
@@ -166,7 +177,7 @@ namespace frm
                 if (ImGui::Button("Add vertex"))
                 {
                     add_vertex(dcel, new_vertex);
-                    is_dirty = true;
+                    is_dirty_vertices = true;
                 }
             }
 
@@ -179,19 +190,25 @@ namespace frm
                     ImGui::Button("Remove current vertex with single edge"))
                 {
                     remove_vertex_with_single_edge(dcel, current);
-                    is_dirty = true;
+                    is_dirty_vertices = true;
                 }
             }
-            return is_dirty;
+            return is_dirty_vertices;
         }
 
-        bool show_faces(DCEL & dcel, sf::RenderWindow & window) noexcept
+        bool show_faces(DCEL & dcel, size_t current_face, sf::RenderWindow & window, bool & is_dirty) noexcept
         {
-            bool is_dirty = false;
+            bool is_dirty_faces = false;
 
             ImGui::Columns(3);
 
             static size_t current = std::numeric_limits<size_t>::max();
+
+            if (is_dirty)
+            {
+                current = current_face;
+                is_dirty = false;
+            }
 
             show_indexed_combo(current, dcel.faces.size(), "Face");
 
@@ -264,21 +281,27 @@ namespace frm
                         ImGui::Button("Add Face"))
                     {
                         add_face_from_three_points(dcel, first_vertex_index, second_vertex_index, third_vertex_index, current);
-                        is_dirty = true;
+                        is_dirty_faces = true;
                     }
                 }
             }
 
-            return is_dirty;
+            return is_dirty_faces;
         }
 
-        bool show_edges(DCEL & dcel, sf::RenderWindow & window) noexcept
+        bool show_edges(DCEL & dcel, size_t current_edge, sf::RenderWindow & window, bool & is_dirty) noexcept
         {
-            bool is_dirty = false;
+            bool is_dirty_edges = false;
 
             ImGui::Columns(3);
 
             static size_t current = std::numeric_limits<size_t>::max();
+
+            if (is_dirty)
+            {
+                current = current_edge;
+                is_dirty = false;
+            }
 
             show_indexed_combo(current, dcel.edges.size(), "Edge");
 
@@ -296,11 +319,11 @@ namespace frm
 
                 draw_edge_highlighted(begin_point, end_point, color, width, window);
 
-                is_dirty |= ImGui::SliderFloat("X begin", &begin_point.x, 0.f, 1000.f);
-                is_dirty |= ImGui::SliderFloat("Y begin", &begin_point.y, 0.f, 1000.f);
+                is_dirty_edges |= ImGui::SliderFloat("X begin", &begin_point.x, 0.f, 1000.f);
+                is_dirty_edges |= ImGui::SliderFloat("Y begin", &begin_point.y, 0.f, 1000.f);
 
-                is_dirty |= ImGui::SliderFloat("X end", &end_point.x, 0.f, 1000.f);
-                is_dirty |= ImGui::SliderFloat("Y end", &end_point.y, 0.f, 1000.f);
+                is_dirty_edges |= ImGui::SliderFloat("X end", &end_point.x, 0.f, 1000.f);
+                is_dirty_edges |= ImGui::SliderFloat("Y end", &end_point.y, 0.f, 1000.f);
 
                 ImGui::Text("Face %d", static_cast<int>(dcel.edges[current].incident_face));
                 ImGui::Text("Twin %d", static_cast<int>(dcel.edges[current].twin_edge));
@@ -336,12 +359,12 @@ namespace frm
                     if (ImGui::Button("Add vertex and connect to edge origin"))
                     {
                         add_vertex_and_connect_to_edge_origin(dcel, new_vertex, current);
-                        is_dirty = true;
+                        is_dirty_edges = true;
                     }
                     if (ImGui::Button("Add vertex and split edge"))
                     {
                         add_vertex_and_split_edge(dcel, new_vertex, current);
-                        is_dirty = true;
+                        is_dirty_edges = true;
                     }
                 }
             }
@@ -383,16 +406,22 @@ namespace frm
                     if (ImGui::Button("Add adge between two edges"))
                     {
                         add_edge_between_two_edges(dcel, begin_edge, end_edge);
-                        is_dirty = true;
+                        is_dirty_edges = true;
                     }
                 }
             }
-            return is_dirty;
+            return is_dirty_edges;
         }
 
-        bool spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept
+        bool spawn_ui(DCEL & dcel,
+            size_t current_vertex,
+            size_t current_edge,
+            size_t current_face,
+            sf::RenderWindow & window,
+            std::string const & path,
+            bool & is_dirty) noexcept
         {
-            bool is_dirty = false;
+            bool is_dirty_ui = false;
 
             std::string const name = std::filesystem::path{ path }.stem().string();
 
@@ -408,14 +437,12 @@ namespace frm
                     if (ImGui::MenuItem("Load"))
                     {
                         load_from_file(path, dcel);
-                        is_dirty = true;
+                        is_dirty_ui = true;
                     }
                     ImGui::EndMenuBar();
                 }
 
-                char const * items[] = { "Vertices", "Faces", "Edges" };
 
-                static char const * current_item = items[0];
                 if (ImGui::BeginCombo("Type", current_item))
                 {
                     for (size_t i = 0; i < std::size(items); ++i)
@@ -438,20 +465,20 @@ namespace frm
 
                 if (current_item == items[0])
                 {
-                    is_dirty |= show_vertices(dcel, window);
+                    is_dirty_ui |= show_vertices(dcel, current_vertex, window, is_dirty);
                 }
                 if (current_item == items[1])
                 {
-                    is_dirty |= show_faces(dcel, window);
+                    is_dirty_ui |= show_faces(dcel, current_face, window, is_dirty);
                 }
                 if (current_item == items[2])
                 {
-                    is_dirty |= show_edges(dcel, window);
+                    is_dirty_ui |= show_edges(dcel, current_edge, window, is_dirty);
                 }
             }
             ImGui::End();
 
-            return is_dirty;
+            return is_dirty_ui;
         }
 
         void draw(DCEL & dcel, sf::RenderWindow & window, sf::Color const & color) noexcept
@@ -485,6 +512,21 @@ namespace frm
             }
 
             window.draw(vertices);
+        }
+
+        bool is_vertices_mode() noexcept
+        {
+            return current_item == items[0];
+        }
+
+        bool is_faces_mode() noexcept
+        {
+            return current_item == items[1];
+        }
+
+        bool is_edges_mode() noexcept
+        {
+            return current_item == items[2];
         }
     }
 }

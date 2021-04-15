@@ -2,14 +2,27 @@
 
 #include <string>
 #include <cassert>
+#include <cmath>
+#include <algorithm>
 
 
 namespace frm
 {
+    Point operator+(Point a, Point b) noexcept
+    {
+        return { a.x + b.x, a.y + b.y };
+    }
+
     Point operator-(Point a, Point b) noexcept
     {
         return { a.x - b.x, a.y - b.y };
     }
+
+    Point operator*(float t, Point a) noexcept
+    {
+        return { t * a.x, t * a.y };
+    }
+
 
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept
     {
@@ -41,8 +54,13 @@ namespace frm
     {
         return atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y);
     }
+
+    constexpr float dot(Point a, Point b) noexcept
+    {
+        return a.x * b.x + a.y * b.y;
+    }
     
-    constexpr Point line_from_two_points(Point begin, Point end) noexcept(!IS_DEBUG)
+    Point line_from_two_points(Point begin, Point end) noexcept(!IS_DEBUG)
     {
         Point const  target = { end.x - begin.x, end.y - begin.y };
 
@@ -51,6 +69,26 @@ namespace frm
         float const m = target.y / target.x;
 
         return { m, begin.y - m * begin.x };
+    }
+
+
+    float distance_between_point_and_line_segment(Point line_begin, Point line_end, Point point) noexcept
+    {
+        float const sqr_distance = sqr_distance_between_points(line_begin, line_end);
+        if (is_approximately(sqr_distance, 0.f))
+        {
+            return distance_between_points(line_begin, point);
+        }
+
+        float const t = std::max(0.f, std::min(1.f, dot(point - line_begin, line_end - line_begin) / sqr_distance));
+        Point const projection = line_begin + t * (line_end - line_begin);
+
+        return distance_between_points(point, projection);
+    }
+
+    float distance_between_points(Point a, Point b) noexcept
+    {
+        return std::sqrtf(sqr_distance_between_points(a, b));
     }
 
     int compare_point_by_x(Point first, Point second) noexcept(!IS_DEBUG)

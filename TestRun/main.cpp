@@ -1,6 +1,8 @@
 #include "Application.h"
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
+#include "nearest_point.h"
+#include "nearest_line.h"
 
 #include "imgui/imgui.h"
 
@@ -13,35 +15,60 @@ int main()
 
     frm::trapezoid_data_and_graph_root_t trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
 
+    size_t current_vertex = 0;
+    size_t current_edge = 0;
     size_t current_face = trapezoid_data_and_graph_root.first;
 
     frm::Application application{};
 
     bool need_trapezoid_data = true;
+    bool is_dirty = true;
 
-    application.set_on_event([&dcel, &current_face, &trapezoid_data_and_graph_root, &need_trapezoid_data](sf::Event current_event) noexcept
+    application.set_on_event([&dcel,
+        &current_vertex,
+        &current_edge,
+        &current_face,
+        &trapezoid_data_and_graph_root,
+        &need_trapezoid_data,
+        &is_dirty
+    ](sf::Event current_event) noexcept
         {
-            if (current_event.type == sf::Event::MouseButtonPressed)
+            if (current_event.type == sf::Event::MouseButtonPressed &&
+                current_event.mouseButton.button == sf::Mouse::Right)
             {
                 int x = current_event.mouseButton.x;
                 int y = current_event.mouseButton.y;
 
+                frm::Point point{ static_cast<float>(x), static_cast<float>(y) };
+
                 if (need_trapezoid_data)
                 {
-                    current_face = frm::get_face_index(trapezoid_data_and_graph_root, { static_cast<float>(x), static_cast<float>(y) });
+                    current_face = frm::get_face_index(trapezoid_data_and_graph_root, point);
                 }
+
+                current_vertex = frm::nearest_point(dcel, point);
+                current_edge = frm::nearest_line(dcel, point);
+
+                is_dirty = true;
             }
         });
 
-    application.set_on_update([&dcel, &trapezoid_data_and_graph_root, &current_face, &need_trapezoid_data](float dt, sf::RenderWindow & window) noexcept
+    application.set_on_update([&dcel,
+        &trapezoid_data_and_graph_root,
+        &current_vertex,
+        &current_edge,
+        &current_face,
+        &need_trapezoid_data,
+        &is_dirty
+    ](float dt, sf::RenderWindow & window) noexcept
         {
             frm::dcel::draw(dcel, window);
 
-            bool is_dirty = false;
+            bool is_dirty_trapezoid = false;
 
-            is_dirty |= frm::spawn_triangulation_button(dcel);
+            is_dirty_trapezoid |= frm::spawn_triangulation_button(dcel);
 
-            is_dirty |= frm::dcel::spawn_ui(dcel, window, "Dcel_1.dat");
+            is_dirty_trapezoid |= frm::dcel::spawn_ui(dcel, current_vertex, current_edge, current_face,  window, "Dcel_1.dat", is_dirty);
 
             if (ImGui::Begin("Need trapezoid data"))
             {
@@ -50,17 +77,32 @@ int main()
             ImGui::End();
 
             if (need_trapezoid_data)
-            {            
-                if (is_dirty)
+            {
+                if (is_dirty_trapezoid)
                 {
                     trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
                     current_face = trapezoid_data_and_graph_root.first;
                 }
 
-                if (current_face != trapezoid_data_and_graph_root.first)
+                float color[4] = { 0.f, 0.f, 1.f, 0.5f };
+                float radius = 10.f;
+                if (frm::dcel::is_vertices_mode())
                 {
-                    float color[4] = { 0.f, 0.f, 1.f, 0.5f };
-                    frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
+                    frm::dcel::draw_vertex_highlighted(dcel.vertices[current_vertex].coordinate, color, radius, window);
+                }
+                if (frm::dcel::is_edges_mode())
+                {
+                    frm::Point begin_point = dcel.vertices[dcel.edges[current_edge].origin_vertex].coordinate;
+                    frm::Point end_point = dcel.vertices[dcel.edges[dcel.edges[current_edge].twin_edge].origin_vertex].coordinate;
+
+                    frm::dcel::draw_edge_highlighted(begin_point, end_point, color, radius, window);
+                }
+                if (frm::dcel::is_faces_mode())
+                {
+                    if (current_face != trapezoid_data_and_graph_root.first)
+                    {
+                        frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
+                    }
                 }
             }
         });
