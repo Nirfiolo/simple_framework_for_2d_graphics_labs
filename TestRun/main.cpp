@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
+#include "common_ui_part.h"
 #include "nearest_point.h"
 #include "nearest_line.h"
 #include "vvve.h"
@@ -98,14 +99,14 @@ int main()
                 float radius = 10.f;
                 if (frm::dcel::is_vertices_mode())
                 {
-                    frm::dcel::draw_vertex_highlighted(dcel.vertices[current_vertex].coordinate, color, radius, window);
+                    frm::draw_vertex_highlighted(dcel.vertices[current_vertex].coordinate, color, radius, window);
                 }
                 if (frm::dcel::is_edges_mode())
                 {
                     frm::Point begin_point = dcel.vertices[dcel.edges[current_edge].origin_vertex].coordinate;
                     frm::Point end_point = dcel.vertices[dcel.edges[dcel.edges[current_edge].twin_edge].origin_vertex].coordinate;
 
-                    frm::dcel::draw_edge_highlighted(begin_point, end_point, color, radius, window);
+                    frm::draw_edge_highlighted(begin_point, end_point, color, radius, window);
                 }
                 if (frm::dcel::is_faces_mode())
                 {
