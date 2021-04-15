@@ -16,7 +16,9 @@ namespace frm
         float y;
     };
 
+    Point operator+(Point a, Point b) noexcept;
     Point operator-(Point a, Point b) noexcept;
+    Point operator*(float t, Point a) noexcept;
 
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept;
     std::istream & operator>>(std::istream & is, Point & point) noexcept;
@@ -25,13 +27,16 @@ namespace frm
 
     static constexpr float radian_to_degree(float angle) noexcept;
 
+
     float angle_between_vectors(Point a, Point b) noexcept;
+
+    static constexpr float dot(Point a, Point b) noexcept;
 
     // line: y = k * x + c
     // In returnable Point:
     // x - k
     // y - c
-    static constexpr Point line_from_two_points(Point begin, Point end) noexcept(!IS_DEBUG);
+    Point line_from_two_points(Point begin, Point end) noexcept(!IS_DEBUG);
 
     // line: y = k * x + c
     // Point line:
@@ -41,6 +46,20 @@ namespace frm
     {
         return point.y > line.x * point.x + line.y;
     }
+
+    static constexpr bool is_point_on_left_side(Point line_begin, Point line_end, Point point) noexcept
+    {
+        return (line_end.x - line_begin.x) * (point.y - line_begin.y) - (line_end.y - line_begin.y) * (point.x - line_begin.x) > -epsilon;
+    }
+
+    float distance_between_point_and_line_segment(Point line_begin, Point line_end, Point point) noexcept;
+
+    static constexpr float sqr_distance_between_points(Point a, Point b) noexcept
+    {
+        return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+    }
+
+    float distance_between_points(Point a, Point b) noexcept;
 
     // -1 - first > second
     //  0 - equal
@@ -74,5 +93,24 @@ namespace frm
             lerp(begin.x, end.x, alpha),
             lerp(begin.y, end.y, alpha)
         };
+    }
+
+    template<typename T>
+    static constexpr bool is_approximately(T a, T b) noexcept
+    {
+        return a - b > -static_cast<T>(epsilon) && a - b < static_cast<T>(epsilon);
+    }
+
+    template<>
+    static constexpr bool is_approximately<float>(float a, float b)
+    {
+        return a - b > -epsilon && a - b < epsilon;
+    }
+
+    template<>
+    static constexpr bool is_approximately<Point>(Point a, Point b)
+    {
+        return is_approximately(a.x, b.x) &&
+            is_approximately(a.y, b.y);
     }
 }

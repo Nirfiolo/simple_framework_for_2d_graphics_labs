@@ -57,6 +57,12 @@
     <ClCompile Include="trapezoidal_decomposition.cpp">
       <Filter>Algorithms</Filter>
     </ClCompile>
+    <ClCompile Include="nearest_line.cpp">
+      <Filter>Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="nearest_point.cpp">
+      <Filter>Algorithms</Filter>
+    </ClCompile>
     <ClCompile Include="vvse_ui_part.cpp">
       <Filter>Structs</Filter>
     </ClCompile>
@@ -108,6 +114,12 @@
       <Filter>Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="trapezoidal_decomposition.h">
+      <Filter>Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="nearest_line.h">
+      <Filter>Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="nearest_point.h">
       <Filter>Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="common.h">

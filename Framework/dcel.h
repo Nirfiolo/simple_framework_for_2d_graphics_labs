@@ -73,10 +73,24 @@ namespace frm
 
         // TODO: add remove
 
-        bool spawn_ui(DCEL & dcel, sf::RenderWindow & window, std::string const & path) noexcept;
+        bool spawn_ui(DCEL & dcel,
+            size_t current_vertex,
+            size_t current_edge,
+            size_t current_face,
+            sf::RenderWindow & window,
+            std::string const & path,
+            bool & is_dirty) noexcept;
+
+        void draw_vertex_highlighted(Point point, float circle_color[4], float radius, sf::RenderWindow & window) noexcept;
 
         void draw_face_highlighted(size_t face_index, DCEL const & dcel, float color[4], sf::RenderWindow & window) noexcept;
 
+        void draw_edge_highlighted(Point begin_point, Point end_point, float color[4], float width, sf::RenderWindow & window) noexcept;
+
         void draw(DCEL & dcel, sf::RenderWindow & window, sf::Color const & color = sf::Color::White) noexcept;
+
+        bool is_vertices_mode() noexcept;
+        bool is_faces_mode() noexcept;
+        bool is_edges_mode() noexcept;
     }
 }
