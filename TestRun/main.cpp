@@ -1,11 +1,16 @@
 #include "Application.h"
+
+#include "vvve.h"
+#include "data_convert.h"
+
 #include "triangulation.h"
 #include "trapezoidal_decomposition.h"
 #include "quick_hull.h"
 #include "common_ui_part.h"
 #include "nearest_point.h"
 #include "nearest_line.h"
-#include "vvve.h"
+#include "apply_hull.h"
+
 
 #include "imgui/imgui.h"
 
@@ -16,10 +21,6 @@ int main()
 
     frm::dcel::load_from_file("Dcel_1.dat", dcel);
 
-    frm::vvve::VVVE vvve{};
-
-    frm::vvve::load_from_file("Vvse_1.dat", vvve);
-
     frm::trapezoid_data_and_graph_root_t trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
 
     size_t current_vertex = 0;
@@ -28,7 +29,7 @@ int main()
 
     frm::Application application{};
 
-    bool need_trapezoid_data = true;
+    bool need_trapezoid_data = false;
     bool is_dirty = true;
 
     application.set_on_event([&dcel,
@@ -61,7 +62,6 @@ int main()
         });
 
     application.set_on_update([&dcel,
-        &vvve,
         &trapezoid_data_and_graph_root,
         &current_vertex,
         &current_edge,
@@ -74,7 +74,21 @@ int main()
 
             bool is_dirty_trapezoid = false;
 
-            is_dirty_trapezoid |= frm::spawn_triangulation_button(dcel);
+            static bool is_active = false;
+            if (ImGui::Begin("Triangulation", &is_active))
+            {
+                if (ImGui::Button("Triangulate"))
+                {
+                    frm::vvve::VVVE vvve = frm::dcel_to_vvve(dcel);
+                    frm::quick_hull(vvve);
+
+                    frm::apply_hull(dcel, vvve);
+
+                    frm::triangulation(dcel);
+                    is_dirty_trapezoid = true;
+                }
+            }
+            ImGui::End();
 
             is_dirty_trapezoid |= frm::dcel::spawn_ui(dcel, current_vertex, current_edge, current_face,  window, "Dcel_1.dat", is_dirty);
 
@@ -84,27 +98,12 @@ int main()
             }
             ImGui::End();
 
-            frm::vvve::draw(vvve, window);
-
-            bool is_dirty_vvve = false;
-
-            is_dirty_vvve |= frm::vvve::spawn_ui(vvve, window, "Vvse_1.dat");
-
-            if (ImGui::Begin("QuickHull"))
-            {
-                if (ImGui::Button("Run"))
-                {
-                    frm::quick_hull(vvve);
-                }
-            }
-            ImGui::End();
-
             if (need_trapezoid_data)
             {
                 if (is_dirty_trapezoid)
                 {
                     trapezoid_data_and_graph_root = frm::generate_trapezoid_data_and_graph_root(dcel);
-                    current_face = trapezoid_data_and_graph_root.first;
+                    current_face = frm::dcel::get_outside_face_index(dcel);
                 }
 
                 float color[4] = { 0.f, 0.f, 1.f, 0.5f };
@@ -122,7 +121,7 @@ int main()
                 }
                 if (frm::dcel::is_faces_mode())
                 {
-                    if (current_face != trapezoid_data_and_graph_root.first)
+                    if (current_face != frm::dcel::get_outside_face_index(dcel))
                     {
                         frm::dcel::draw_face_highlighted(current_face, dcel, color, window);
                     }

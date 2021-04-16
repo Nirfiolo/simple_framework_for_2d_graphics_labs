@@ -61,11 +61,15 @@ namespace frm
         // pair.second edge index
         std::vector<std::pair<size_t, size_t>> get_adjacent_vertices_and_edges(DCEL const & dcel, size_t vertex_index) noexcept;
 
+        bool is_points_connected(DCEL const & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept;
+
         void add_vertex(DCEL & dcel, Point coordinate) noexcept;
         void add_vertex_and_split_edge(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         void add_vertex_and_connect_to_edge_origin(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
         
         std::pair<size_t, size_t> add_edge_between_two_edges(DCEL & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
+
+        std::pair<size_t, size_t> add_edge_between_two_points(DCEL & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept;
 
         void add_face_from_three_points(DCEL & dcel, size_t first_vertex_index, size_t second_vertex_index, size_t third_vertex_index, size_t face_index) noexcept;
 

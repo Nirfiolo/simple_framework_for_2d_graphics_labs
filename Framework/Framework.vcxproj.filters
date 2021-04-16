@@ -78,6 +78,12 @@
     <ClCompile Include="quick_hull.cpp">
       <Filter>Algorithms</Filter>
     </ClCompile>
+    <ClCompile Include="data_convert.cpp">
+      <Filter>Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="apply_hull.cpp">
+      <Filter>Algorithms</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -136,6 +142,12 @@
     </ClInclude>
     <ClInclude Include="quick_hull.h">
       <Filter>Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="apply_hull.h">
+      <Filter>Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="data_convert.h">
+      <Filter>Structs</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

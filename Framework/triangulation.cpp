@@ -3,6 +3,7 @@
 #include "imgui/imgui.h"
 
 #include <set>
+#include <optional>
 
 
 namespace frm
@@ -253,7 +254,13 @@ namespace frm
     {
         size_t const outside_face_index = get_outside_face_index(dcel);
 
-        size_t const main_face_index = dcel.edges[dcel.edges[dcel.faces[outside_face_index].edge].twin_edge].incident_face;
+        // if there is one big polygon around that does not touch any
+        // other polygons, need to use twink to any of the outside edges.
+        // if there is a hull around other polygons, need to use one of
+        // the last two edges that were added that is not incident to the outside face.
+        size_t const main_face_index = dcel.edges.back().incident_face == outside_face_index ?
+            dcel.edges[dcel.edges.back().twin_edge].incident_face :
+            dcel.edges.back().incident_face;
 
         std::set<size_t> outside_faces{};
         for (size_t i = 0; i < dcel.faces.size(); ++i)
@@ -276,16 +283,48 @@ namespace frm
         return false;
     }
 
+    // pair.first vertex index
+    // pair.second edge index
+    std::vector<std::pair<size_t, size_t>> get_adjacent_vertices_and_edges_without_outside_faces(
+        dcel::DCEL const & dcel,
+        size_t vertex_index,
+        std::set<size_t> const & outside_faces) noexcept
+    {
+        std::vector<std::pair<size_t, size_t>> adjacents =
+            frm::dcel::get_adjacent_vertices_and_edges(dcel, vertex_index);
+
+        std::vector<std::pair<size_t, size_t>> new_adjacents{};
+
+        for (std::pair<size_t, size_t> adjacent : adjacents)
+        {
+            if (!is_outside_face(dcel, outside_faces, dcel.edges[adjacent.second].incident_face))
+            {
+                new_adjacents.push_back(adjacent);
+            }
+            else
+            {
+                size_t edge_twin = dcel.edges[adjacent.second].twin_edge;
+                if (!is_outside_face(dcel, outside_faces, dcel.edges[edge_twin].incident_face))
+                {
+                    new_adjacents.push_back(adjacent);
+                }
+            }
+        }
+
+        return new_adjacents;
+    }
+
     // first - current
     // second.first - previous
     // second.second - next
-    std::pair<size_t, std::pair<size_t, size_t>> get_current_and_previous_and_next_edges_to_current_vertex(
+    std::optional<std::pair<size_t, std::pair<size_t, size_t>>> get_current_and_previous_and_next_edges_to_current_vertex(
         dcel::DCEL const & dcel,
         size_t current_vertex_index,
         std::set<size_t> const & outside_faces
     ) noexcept
     {
-        std::vector<std::pair<size_t, size_t>> adjacents = frm::dcel::get_adjacent_vertices_and_edges(dcel, current_vertex_index);
+        std::vector<std::pair<size_t, size_t>> adjacents =
+            get_adjacent_vertices_and_edges_without_outside_faces(dcel, current_vertex_index, outside_faces);
 
         if (adjacents.size() == 2)
         {
@@ -295,8 +334,13 @@ namespace frm
             size_t const previous_edge_to_current_index = dcel.edges[current_edge_index].previous_edge;
             size_t const next_edge_after_current_index = dcel.edges[current_edge_index].next_edge;
 
-            return { current_edge_index, { previous_edge_to_current_index, next_edge_after_current_index } };
+            return { { current_edge_index, { previous_edge_to_current_index, next_edge_after_current_index } } };
         }
+        if (adjacents.empty())
+        {
+            return {};
+        }
+
         assert(false && "Incorrect polygon");
 
         return {};
@@ -317,7 +361,7 @@ namespace frm
 
         if (adjacents.size() == 2)
         {
-            return get_current_and_previous_and_next_edges_to_current_vertex(dcel, current_vertex_index, outside_faces);
+            return *get_current_and_previous_and_next_edges_to_current_vertex(dcel, current_vertex_index, outside_faces);
         }
 
         size_t first_neighbour_index_in_adjacents = std::numeric_limits<size_t>::max();
@@ -438,7 +482,7 @@ namespace frm
     ) noexcept
     {
         std::pair<size_t, size_t> const previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces).second;
+            (*get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces)).second;
         size_t const previous_edge_to_current_index = previous_and_next_edges_to_current.first;
         size_t const next_edge_after_current_index = previous_and_next_edges_to_current.second;
 
@@ -462,7 +506,7 @@ namespace frm
     ) noexcept
     {
         std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+            *get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
         size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
         size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
         size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
@@ -515,7 +559,7 @@ namespace frm
         StatusComponent nearest_left = *nearest_left_component;
 
         std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+            *get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
         size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
         size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
         size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
@@ -561,7 +605,7 @@ namespace frm
     ) noexcept
     {
         std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+            *get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
         size_t current_edge_index = current_and_previous_and_next_edges_to_current.first;
         size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
         size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
@@ -654,7 +698,7 @@ namespace frm
     ) noexcept
     {
         std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+            *get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
         size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
         size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
         size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
@@ -712,7 +756,7 @@ namespace frm
     ) noexcept
     {
         std::pair<size_t, std::pair<size_t, size_t>> const current_and_previous_and_next_edges_to_current =
-            get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
+            *get_current_and_previous_and_next_edges_to_current_vertex(dcel, vertex_index, outside_faces);
         size_t const current_edge_index = current_and_previous_and_next_edges_to_current.first;
         size_t const previous_edge_to_current_index = current_and_previous_and_next_edges_to_current.second.first;
         size_t const next_edge_after_current_index = current_and_previous_and_next_edges_to_current.second.second;
@@ -758,10 +802,24 @@ namespace frm
         std::vector<VertexType> vertex_types(dcel.vertices.size(), VertexType::Undefined);
         std::vector<std::pair<size_t, size_t>> vertex_neighbours(dcel.vertices.size());
 
-        for (size_t i = 0; i < vertex_types.size(); ++i)
+        std::vector<size_t> vertices(dcel.vertices.size());
+        for (size_t i = 0; i < vertices.size(); ++i)
         {
-            std::pair<size_t, size_t> const previous_and_next_edges_to_current =
-                get_current_and_previous_and_next_edges_to_current_vertex(dcel, i, outside_faces).second;
+            vertices[i] = i;
+        }
+
+        for (size_t i = 0; i < dcel.vertices.size(); ++i)
+        {
+            std::optional<std::pair<size_t, std::pair<size_t, size_t>>> const current_and_previous_and_next_edges_to_current =
+                get_current_and_previous_and_next_edges_to_current_vertex(dcel, i, outside_faces);
+
+            if (!current_and_previous_and_next_edges_to_current)
+            {
+                vertices.erase(std::find(vertices.begin(), vertices.end(), i));
+                continue;
+            }
+
+            std::pair<size_t, size_t> const previous_and_next_edges_to_current = (*current_and_previous_and_next_edges_to_current).second;
             size_t const previous_edge_to_current_index = previous_and_next_edges_to_current.first;
             size_t const next_edge_after_current_index = previous_and_next_edges_to_current.second;
 
@@ -811,11 +869,6 @@ namespace frm
             }
         }
 
-        std::vector<size_t> vertices(dcel.vertices.size());
-        for (size_t i = 0; i < vertices.size(); ++i)
-        {
-            vertices[i] = i;
-        }
 
         std::sort(vertices.begin(), vertices.end(), [&dcel](size_t a, size_t b) noexcept -> bool
             {

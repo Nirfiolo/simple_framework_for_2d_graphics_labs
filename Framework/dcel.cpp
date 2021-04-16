@@ -250,6 +250,21 @@ namespace frm
             return adjacents;
         }
 
+        bool is_points_connected(DCEL const & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept
+        {
+            std::vector<size_t> adjacent_vertices_and_edges = get_adjacent_vertices(dcel, begin_vertex_index);
+
+            for (size_t const & adjacent_vertex_and_edge : adjacent_vertices_and_edges)
+            {
+                if (adjacent_vertex_and_edge == end_vertex_index)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         template<typename T_1, typename T_2>
         size_t get_free_index(std::vector<T_1> & free_indices, std::vector<T_2> & data) noexcept
         {
@@ -446,6 +461,36 @@ namespace frm
                     }
                 }
             }
+
+            return { edge_from_begin_to_end_index, edge_from_end_to_begin_index };
+        }
+
+        std::pair<size_t, size_t> add_edge_between_two_points(DCEL & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept
+        {
+            size_t const edge_from_begin_to_end_index = get_free_edge_index(dcel);
+            size_t const edge_from_end_to_begin_index = get_free_edge_index(dcel);
+
+            DCEL::Edge & edge_from_begin_to_end = dcel.edges[edge_from_begin_to_end_index];
+            DCEL::Edge & edge_from_end_to_begin = dcel.edges[edge_from_end_to_begin_index];
+
+            DCEL::Vertex & begin_vertex = dcel.vertices[begin_vertex_index];
+            DCEL::Vertex & end_vertex = dcel.vertices[end_vertex_index];
+
+            edge_from_begin_to_end.origin_vertex = begin_vertex_index;
+            edge_from_begin_to_end.twin_edge = edge_from_end_to_begin_index;
+            edge_from_begin_to_end.incident_face = get_outside_face_index(dcel);
+            edge_from_begin_to_end.next_edge = edge_from_end_to_begin_index;
+            edge_from_begin_to_end.previous_edge = edge_from_end_to_begin_index;
+
+            edge_from_end_to_begin.origin_vertex = end_vertex_index;
+            edge_from_end_to_begin.twin_edge = edge_from_begin_to_end_index;
+            edge_from_end_to_begin.incident_face = get_outside_face_index(dcel);
+            edge_from_end_to_begin.next_edge = edge_from_begin_to_end_index;
+            edge_from_end_to_begin.previous_edge = edge_from_begin_to_end_index;
+
+            begin_vertex.incident_edge = edge_from_begin_to_end_index;
+
+            end_vertex.incident_edge = edge_from_end_to_begin_index;
 
             return { edge_from_begin_to_end_index, edge_from_end_to_begin_index };
         }

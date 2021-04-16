@@ -296,9 +296,10 @@ namespace frm
                     }
                 }
             }
-            static bool need_add_edge = true;
-            ImGui::Checkbox("Add Edge", &need_add_edge);
-            if (need_add_edge)
+
+            static bool need_add_edge_between_edges = true;
+            ImGui::Checkbox("Add Edge between edges", &need_add_edge_between_edges);
+            if (need_add_edge_between_edges)
             {
                 static float color[4] = { 0.f, 1.0f, 0.f, 0.7f };
                 static float width = 10.f;
@@ -329,7 +330,7 @@ namespace frm
                     draw_edge_highlighted(begin_point, end_point, color, width, window);
                 }
 
-                if (begin_edge < dcel.edges.size() && begin_edge != end_edge)
+                if (begin_edge < dcel.edges.size() && end_edge < dcel.edges.size() && begin_edge != end_edge)
                 {
                     if (ImGui::Button("Add adge between two edges"))
                     {
@@ -338,6 +339,41 @@ namespace frm
                     }
                 }
             }
+
+
+            static bool need_add_edge_between_points = true;
+            ImGui::Checkbox("Add Edge between points", &need_add_edge_between_points);
+            if (need_add_edge_between_points)
+            {
+                static float color[4] = { 0.f, 1.0f, 0.f, 0.7f };
+                static float width = 10.f;
+
+                static size_t begin_point = std::numeric_limits<size_t>::max();
+                static size_t end_point = std::numeric_limits<size_t>::max();
+
+                show_indexed_combo(begin_point, dcel.vertices.size(), "Begin point");
+                show_indexed_combo(end_point, dcel.vertices.size(), "End point");
+
+                if (begin_point < dcel.vertices.size())
+                {
+                    draw_vertex_highlighted(dcel.vertices[begin_point].coordinate, color, width, window);
+                }
+
+                if (end_point < dcel.vertices.size())
+                {
+                    draw_vertex_highlighted(dcel.vertices[end_point].coordinate, color, width, window);
+                }
+
+                if (begin_point < dcel.vertices.size() && end_point < dcel.vertices.size() && begin_point != end_point)
+                {
+                    if (ImGui::Button("Add adge between two points"))
+                    {
+                        add_edge_between_two_points(dcel, begin_point, end_point);
+                        is_dirty_edges = true;
+                    }
+                }
+            }
+
             return is_dirty_edges;
         }
 
