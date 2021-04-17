@@ -1213,6 +1213,6 @@ namespace frm
 
         assert(top_line_segment.face_under_line == bottom_line_segment.face_over_line);
 
-        return top_line_segment.face_under_line;
+        return bottom_line_segment.face_over_line;
     }
 }

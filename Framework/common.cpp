@@ -23,6 +23,12 @@ namespace frm
         return { t * a.x, t * a.y };
     }
 
+    Point & operator+=(Point & a, Point b) noexcept
+    {
+        a = a + b;
+        return a;
+    }
+
 
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept
     {
@@ -44,15 +50,29 @@ namespace frm
     {
         return angle / 180.f * pi;
     }
-    
-    constexpr float radian_to_degree(float angle) noexcept
-    {
-        return angle * 180.f / pi;
-    }
-    
+
     float angle_between_vectors(Point a, Point b) noexcept
     {
         return atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y);
+    }
+
+    float angle_to_0_1_vector(Point a) noexcept
+    {
+        if (is_approximately(a.x, 0.f))
+        {
+            if (a.y < -epsilon)
+            {
+                return pi;
+            }
+            return 0.f;   
+        }
+
+        if (a.x > epsilon)
+        {
+            return angle_between_vectors(a, Point{ 0.f, 1.f });
+        }
+
+        return pi + angle_between_vectors(a, Point{ 0.f, -1.f });
     }
 
     constexpr float dot(Point a, Point b) noexcept

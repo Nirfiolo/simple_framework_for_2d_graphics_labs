@@ -19,16 +19,22 @@ namespace frm
     Point operator+(Point a, Point b) noexcept;
     Point operator-(Point a, Point b) noexcept;
     Point operator*(float t, Point a) noexcept;
+    Point & operator+=(Point & a, Point b) noexcept;
 
     std::ostream & operator<<(std::ostream & os, Point const & point) noexcept;
     std::istream & operator>>(std::istream & is, Point & point) noexcept;
 
     static constexpr float degree_to_radian(float angle) noexcept;
 
-    static constexpr float radian_to_degree(float angle) noexcept;
+    static constexpr float radian_to_degree(float angle) noexcept
+    {
+        return angle * 180.f / pi;
+    }
 
 
     float angle_between_vectors(Point a, Point b) noexcept;
+
+    float angle_to_0_1_vector(Point a) noexcept;
 
     static constexpr float dot(Point a, Point b) noexcept;
 

@@ -53,7 +53,11 @@ namespace frm
         void safe_to_file(std::string const & path, DCEL const & dcel) noexcept;
         void load_from_file(std::string const & path, DCEL & dcel) noexcept;
 
-        size_t get_outside_face_index(frm::dcel::DCEL const & dcel) noexcept(!IS_DEBUG);
+        Point get_vector_from_edge(DCEL const & dcel, size_t edge_index) noexcept;
+
+        size_t get_outside_face_index(DCEL const & dcel) noexcept(!IS_DEBUG);
+
+        size_t get_possibly_main_face_index(DCEL const & dcel) noexcept;
 
         std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept;
 
@@ -62,6 +66,7 @@ namespace frm
         std::vector<std::pair<size_t, size_t>> get_adjacent_vertices_and_edges(DCEL const & dcel, size_t vertex_index) noexcept;
 
         bool is_points_connected(DCEL const & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept;
+        bool is_edges_connected(DCEL const & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept;
 
         void add_vertex(DCEL & dcel, Point coordinate) noexcept;
         void add_vertex_and_split_edge(DCEL & dcel, Point coordinate, size_t edge_index) noexcept;
@@ -72,6 +77,10 @@ namespace frm
         std::pair<size_t, size_t> add_edge_between_two_points(DCEL & dcel, size_t begin_vertex_index, size_t end_vertex_index) noexcept;
 
         void add_face_from_three_points(DCEL & dcel, size_t first_vertex_index, size_t second_vertex_index, size_t third_vertex_index, size_t face_index) noexcept;
+
+        // 0 - outside face
+        // 1 - inside face
+        DCEL detach_face(DCEL const & dcel, size_t face_index) noexcept;
 
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept;
 

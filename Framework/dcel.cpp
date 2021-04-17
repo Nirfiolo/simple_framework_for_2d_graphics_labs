@@ -1,8 +1,11 @@
 #include "dcel.h"
 
+#include "trapezoidal_decomposition.h"
+
 #include "imgui/imgui.h"
 
 #include <string>
+#include <set>
 #include <fstream>
 #include <filesystem>
 
@@ -152,7 +155,21 @@ namespace frm
             file_input >> dcel;
         }
 
-        size_t get_outside_face_index(frm::dcel::DCEL const & dcel) noexcept(!IS_DEBUG)
+        Point get_vector_from_edge(DCEL const & dcel, size_t edge_index) noexcept
+        {
+            size_t const current_edge_index = edge_index;
+            size_t const next_after_current_edge_index = dcel.edges[current_edge_index].next_edge;
+
+            size_t const current_vertex_index = dcel.edges[current_edge_index].origin_vertex;
+            size_t const next_after_current_vertex_index = dcel.edges[next_after_current_edge_index].origin_vertex;
+
+            frm::Point const current = dcel.vertices[current_vertex_index].coordinate;
+            frm::Point const next = dcel.vertices[next_after_current_vertex_index].coordinate;
+
+            return { next.x - current.x, next.y - current.y };
+        }
+
+        size_t get_outside_face_index(DCEL const & dcel) noexcept(!IS_DEBUG)
         {
             size_t left_vertex_index = 0;
             frm::Point left_vertex_point = dcel.vertices[0].coordinate;
@@ -176,20 +193,6 @@ namespace frm
                 }
             }
 
-            auto const get_vector_from_edge = [&dcel](size_t edge_index) noexcept -> frm::Point
-            {
-                size_t const current_edge_index = edge_index;
-                size_t const next_after_current_edge_index = dcel.edges[current_edge_index].next_edge;
-
-                size_t const current_vertex_index = dcel.edges[current_edge_index].origin_vertex;
-                size_t const next_after_current_vertex_index = dcel.edges[next_after_current_edge_index].origin_vertex;
-
-                frm::Point const current = dcel.vertices[current_vertex_index].coordinate;
-                frm::Point const next = dcel.vertices[next_after_current_vertex_index].coordinate;
-
-                return { next.x - current.x, next.y - current.y };
-            };
-
             size_t outside_face_index = std::numeric_limits<size_t>::max();
 
             size_t const current_vertex_index = left_vertex_index;
@@ -199,8 +202,8 @@ namespace frm
             for (size_t i = 0; i < adjacents.size(); ++i)
             {
                 size_t const current_edge_index = adjacents[i].second;
-                frm::Point const current = get_vector_from_edge(current_edge_index);
-                frm::Point const previuos = get_vector_from_edge(dcel.edges[current_edge_index].previous_edge);
+                frm::Point const current = get_vector_from_edge(dcel, current_edge_index);
+                frm::Point const previuos = get_vector_from_edge(dcel, dcel.edges[current_edge_index].previous_edge);
 
                 float const angle = frm::angle_between_vectors(current, previuos);
 
@@ -215,6 +218,21 @@ namespace frm
             assert(outside_face_index != std::numeric_limits<size_t>::max());
 
             return outside_face_index;
+        }
+
+        size_t get_possibly_main_face_index(DCEL const & dcel) noexcept
+        {
+            size_t outside_face_index = get_outside_face_index(dcel);
+
+            // if there is one big polygon around that does not touch any
+            // other polygons, need to use twink to any of the outside edges.
+            // if there is a hull around other polygons, need to use one of
+            // the last two edges that were added that is not incident to the outside face.
+            size_t const main_face_index = dcel.edges.back().incident_face == outside_face_index ?
+                dcel.edges[dcel.edges.back().twin_edge].incident_face :
+                dcel.edges.back().incident_face;
+
+            return main_face_index;
         }
 
         std::vector<size_t> get_adjacent_vertices(DCEL const & dcel, size_t vertex_index) noexcept
@@ -261,6 +279,24 @@ namespace frm
                     return true;
                 }
             }
+
+            return false;
+        }
+
+        bool is_edges_connected(DCEL const & dcel, size_t begin_edge_index, size_t end_edge_index) noexcept
+        {
+            size_t const begin = begin_edge_index;
+            size_t current_index = begin;
+
+            do
+            {
+                if (current_index == end_edge_index)
+                {
+                    return true;
+                }
+
+                current_index = dcel.edges[current_index].next_edge;
+            } while (current_index != begin);
 
             return false;
         }
@@ -399,7 +435,9 @@ namespace frm
             size_t const end_vertex_index = dcel.edges[end_edge_index].origin_vertex;
 
             size_t const current_face_index = dcel.edges[begin_edge_index].incident_face;
-            size_t const new_face_index = get_free_face_index(dcel);
+            size_t const new_face_index = is_edges_connected(dcel, begin_edge_index, end_edge_index)
+                ? get_free_face_index(dcel)
+                : current_face_index;
 
             size_t const edge_from_begin_to_end_index = get_free_edge_index(dcel);
             size_t const edge_from_end_to_begin_index = get_free_edge_index(dcel);
@@ -437,27 +475,113 @@ namespace frm
 
             previous_to_end_edge.next_edge = edge_from_end_to_begin_index;
 
-            size_t const begin = edge_from_begin_to_end_index;
-            size_t current_index = begin;
-
-            do
+            if (current_face_index != new_face_index)
             {
-                dcel.edges[current_index].incident_face = new_face_index;
-                current_index = dcel.edges[current_index].next_edge;
-            } while (current_index != begin);
+                size_t begin = edge_from_begin_to_end_index;
+                size_t current_index = begin;
 
-            if (dcel.edges[dcel.faces[current_face_index].edge].incident_face != current_face_index)
-            {
-                dcel.free_faces.push_back(current_face_index);
-                dcel.faces[current_face_index].is_exist = false;
+                std::vector<size_t> new_face_edges{};
 
-                // TODO: make more productive
+                do
+                {
+                    new_face_edges.push_back(current_index);
 
+                    dcel.edges[current_index].incident_face = new_face_index;
+                    current_index = dcel.edges[current_index].next_edge;
+                } while (current_index != begin);
+
+                size_t left_edge_index = 0;
+                Point left_vertex_point = dcel.vertices[dcel.edges[new_face_edges[0]].origin_vertex].coordinate;
+
+                for (size_t new_face_edge : new_face_edges)
+                {
+                    Point current_point = dcel.vertices[dcel.edges[new_face_edge].origin_vertex].coordinate;
+
+                    if (abs(current_point.x - left_vertex_point.x) < frm::epsilon)
+                    {
+                        if (current_point.y - left_vertex_point.y < frm::epsilon)
+                        {
+                            left_vertex_point = current_point;
+                            left_edge_index = new_face_edge;
+                        }
+                    }
+                    else if (current_point.x - left_vertex_point.x < frm::epsilon)
+                    {
+                        left_vertex_point = current_point;
+                        left_edge_index = new_face_edge;
+                    }
+                }
+
+                bool is_new_face_inside = true;
+
+                if (dcel.edges[left_edge_index].twin_edge == dcel.edges[left_edge_index].previous_edge)
+                {
+                    is_new_face_inside = false;
+                }
+
+                if (is_new_face_inside)
+                {
+                    frm::Point const current = get_vector_from_edge(dcel, left_edge_index);
+                    frm::Point const previuos = get_vector_from_edge(dcel, dcel.edges[left_edge_index].previous_edge);
+
+                    float const angle = frm::angle_between_vectors(current, previuos);
+
+                    is_new_face_inside = angle < -frm::epsilon;
+                }
+
+                std::vector<size_t> inside_face_edges{ new_face_edges };
+                size_t inside_face_index = new_face_index;
+                size_t outside_face_index = current_face_index;
+
+                if (!is_new_face_inside)
+                {
+                    begin = edge_from_end_to_begin_index;
+                    current_index = begin;
+
+                    inside_face_index = current_face_index;
+                    outside_face_index = new_face_index;
+                    inside_face_edges.clear();
+
+                    do
+                    {
+                        inside_face_edges.push_back(current_index);
+
+                        dcel.edges[current_index].incident_face = current_face_index;
+                        current_index = dcel.edges[current_index].next_edge;
+                    } while (current_index != begin);
+
+                    for (size_t new_face_edge : new_face_edges)
+                    {
+                        dcel.edges[new_face_edge].incident_face = new_face_index;
+                    }
+                }
+
+                std::set<size_t> vertex_to_ignore{};
+
+                for (size_t new_face_edge : inside_face_edges)
+                {
+                    vertex_to_ignore.insert(dcel.edges[new_face_edge].origin_vertex);
+                }
+
+                DCEL detached_face = detach_face(dcel, inside_face_index);
+
+                trapezoid_data_and_graph_root_t trapezoid_data_and_graph_root =
+                    generate_trapezoid_data_and_graph_root(detached_face);
+    
                 for (size_t i = 0; i < dcel.edges.size(); ++i)
                 {
-                    if (dcel.edges[i].incident_face == current_face_index)
+                    if (vertex_to_ignore.find(dcel.edges[i].origin_vertex) == vertex_to_ignore.end())
                     {
-                        dcel.edges[i].incident_face = new_face_index;
+                        size_t const trapezoid_face_index =
+                            get_face_index(trapezoid_data_and_graph_root, dcel.vertices[dcel.edges[i].origin_vertex].coordinate);
+
+                        if (trapezoid_face_index == 1)
+                        {
+                            if (dcel.edges[i].incident_face == outside_face_index)
+                            {
+                                dcel.edges[i].incident_face = inside_face_index;
+                            }
+                        }
                     }
                 }
             }
@@ -559,6 +683,96 @@ namespace frm
             from_first_to_third.incident_face = face_index;
             from_first_to_third.next_edge = from_third_to_second_index;
             from_first_to_third.previous_edge = from_second_to_first_index;
+        }
+
+        DCEL detach_face(DCEL const & dcel, size_t face_index) noexcept
+        {
+            DCEL new_dcel{};
+
+            size_t begin = dcel.faces[face_index].edge;
+            size_t current_index = begin;
+
+            std::vector<size_t> face_edges{};
+
+            do
+            {
+                face_edges.push_back(current_index);
+
+                current_index = dcel.edges[current_index].next_edge;
+            } while (current_index != begin);
+
+            size_t size = face_edges.size();
+
+            new_dcel.vertices.resize(size);
+            new_dcel.edges.resize(size * 2);
+            new_dcel.faces.resize(2);
+
+            for (size_t i = 0; i < size; ++i)
+            {
+                DCEL::Vertex & vertex = new_dcel.vertices[i];
+
+                vertex.coordinate = dcel.vertices[dcel.edges[face_edges[i]].origin_vertex].coordinate;
+                vertex.incident_edge = i;
+            }
+
+            new_dcel.faces[0].edge = size;
+            new_dcel.faces[1].edge = 0;
+
+            // first pair
+            {
+                DCEL::Edge & forward = new_dcel.edges[0];
+                DCEL::Edge & backward = new_dcel.edges[size];
+
+                forward.origin_vertex = 0;
+                forward.twin_edge = size;
+                forward.incident_face = 1;
+                forward.next_edge = 1;
+                forward.previous_edge = size - 1;
+
+                backward.origin_vertex = 1;
+                backward.twin_edge = 0;
+                backward.incident_face = 0;
+                backward.next_edge = 2 * size - 1;
+                backward.previous_edge = size + 1;
+            }
+
+            // last pair
+            {
+                DCEL::Edge & forward = new_dcel.edges[size - 1];
+                DCEL::Edge & backward = new_dcel.edges[2 * size - 1];
+
+                forward.origin_vertex = size - 1;
+                forward.twin_edge = 2 * size - 1;
+                forward.incident_face = 1;
+                forward.next_edge = 0;
+                forward.previous_edge = size - 2;
+
+                backward.origin_vertex = 0;
+                backward.twin_edge = size - 1;
+                backward.incident_face = 0;
+                backward.next_edge = 2 * size - 2;
+                backward.previous_edge = size;
+            }
+
+            for (size_t i = 1; i < size - 1; ++i)
+            {
+                DCEL::Edge & forward = new_dcel.edges[i];
+                DCEL::Edge & backward = new_dcel.edges[i + size];
+
+                forward.origin_vertex = i;
+                forward.twin_edge = i + size;
+                forward.incident_face = 1;
+                forward.next_edge = i + 1;
+                forward.previous_edge = i - 1;
+
+                backward.origin_vertex = i + 1;
+                backward.twin_edge = i;
+                backward.incident_face = 0;
+                backward.next_edge = i + size - 1;
+                backward.previous_edge = i + size + 1;
+            }
+
+            return new_dcel;
         }
 
         void remove_vertex_with_single_edge(DCEL & dcel, size_t vertex_index) noexcept

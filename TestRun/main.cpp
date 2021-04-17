@@ -94,7 +94,7 @@ int main()
 
             if (ImGui::Begin("Need trapezoid data"))
             {
-                ImGui::Checkbox("need_trapezoid_data", &need_trapezoid_data);
+                is_dirty_trapezoid |= ImGui::Checkbox("need_trapezoid_data", &need_trapezoid_data);
             }
             ImGui::End();
 
